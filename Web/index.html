@@ -292,6 +292,8 @@
   .compare .metric .k{ color:var(--text-dim); font-size:0.82rem; }
   .compare .metric .v{ font-family:"IBM Plex Mono", monospace; font-size:1.05rem; }
   .compare .after .v{ color:var(--good); }
+  .compare .after.pending .v{ color:var(--text-faint); }
+  .compare .after.pending .cap{ color:var(--text-faint); }
   .delta-row{
     grid-column:1 / -1; background:var(--panel-raised); padding:12px 18px;
     display:flex; gap:22px; flex-wrap:wrap; font-family:"IBM Plex Mono", monospace; font-size:0.78rem; color:var(--text-dim);
@@ -491,7 +493,7 @@
         <div class="metric"><span class="k">Loss</span><span class="v num" id="lossBefore">&mdash;</span></div>
         <div class="metric"><span class="k">Predicted token</span><span class="v num" id="predBefore">&mdash;</span></div>
       </div>
-      <div class="after">
+      <div class="after" id="afterPanel">
         <div class="cap">After 1 update</div>
         <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v num" id="pAfter">&mdash;</span></div>
         <div class="metric"><span class="k">Loss</span><span class="v num" id="lossAfter">&mdash;</span></div>
@@ -764,9 +766,17 @@
     document.getElementById("lossBefore").textContent = fmt(lossBefore,4);
     document.getElementById("predBefore").textContent = VOCAB[argmax(base.probs)];
 
-    document.getElementById("pAfter").textContent = pct(pAfter);
-    document.getElementById("lossAfter").textContent = fmt(lossAfter,4);
-    document.getElementById("predAfter").textContent = VOCAB[argmax(state.steps===1?after.probs:base.probs)];
+    var afterPanel = document.getElementById("afterPanel");
+    afterPanel.classList.toggle("pending", state.steps!==1);
+    if(state.steps===1){
+      document.getElementById("pAfter").textContent = pct(pAfter);
+      document.getElementById("lossAfter").textContent = fmt(lossAfter,4);
+      document.getElementById("predAfter").textContent = VOCAB[argmax(after.probs)];
+    } else {
+      document.getElementById("pAfter").textContent = "—";
+      document.getElementById("lossAfter").textContent = "—";
+      document.getElementById("predAfter").textContent = "—";
+    }
 
     var deltaRow = document.getElementById("deltaRow");
     if(state.steps===1){
