@@ -71,7 +71,8 @@ def prob_bars(probs, target_idx_0based, predicted_token=None):
 CEMENT_IDX0 = D['cementTargetIndex'] - 1  # convert 1-indexed Mathematica -> 0-indexed
 SHOE_IDX0 = D['targetIndex'] - 1
 
-html = f"""<title>Tiny Transformer Notebook</title>
+html = f"""<meta charset="utf-8">
+<title>Tiny Transformer Notebook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">

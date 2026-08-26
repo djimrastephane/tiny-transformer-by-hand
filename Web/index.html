@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Tiny Transformer, By Hand</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -259,6 +260,9 @@
   .switch button.on{ background:var(--amber); color:#1a1204; font-weight:600; }
   .switch button:not(.on):hover{ color:var(--text); }
 
+  .mode-switch button{ font-size:0.88rem; padding:11px 24px; }
+  .mode-hint{ color:var(--text-faint); font-size:0.8rem; margin:10px 0 0; }
+
   /* ---------- probability track ---------- */
   .track-row{
     display:grid; grid-template-columns: 78px 1fr 64px; align-items:center; gap:12px;
@@ -425,29 +429,11 @@
   </header>
 
   <section>
-    <div class="section-label"><span class="tick"></span>Live readout</div>
-    <div class="panel">
-      <div class="pipeline">
-        <div class="stage">
-          <span class="stage-title">Input tokens</span>
-          <div class="tokens">
-            <div class="token-chip">RUN</div>
-            <div class="token-chip">CASING</div>
-          </div>
-        </div>
-        <div class="arrow">&rarr;</div>
-        <div class="stage">
-          <span class="stage-title">Attention weights (row 2)</span>
-          <div class="attn-grid" id="attnGrid"></div>
-          <span class="attn-caption">how much &ldquo;casing&rdquo; attends to each position</span>
-        </div>
-        <div class="arrow">&rarr;</div>
-        <div class="stage">
-          <span class="stage-title" id="nextTokenLabel">P(next token)</span>
-          <div class="next-token-mini" id="miniBars"></div>
-        </div>
-      </div>
+    <div class="switch mode-switch" id="modeSwitch">
+      <button data-m="change" class="on">Change it</button>
+      <button data-m="calculate">Calculate it</button>
     </div>
+    <p class="mode-hint" id="modeHint">Drag the sliders below and watch every number update live.</p>
   </section>
 
   <section>
@@ -468,6 +454,34 @@
             <button data-v="0" class="on">0</button>
             <button data-v="1">1</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="changeItView">
+
+  <section>
+    <div class="section-label"><span class="tick"></span>Live readout</div>
+    <div class="panel">
+      <div class="pipeline">
+        <div class="stage">
+          <span class="stage-title">Input tokens</span>
+          <div class="tokens">
+            <div class="token-chip">RUN</div>
+            <div class="token-chip">CASING</div>
+          </div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage">
+          <span class="stage-title">Attention weights (row 2)</span>
+          <div class="attn-grid" id="attnGrid"></div>
+          <span class="attn-caption">how much &ldquo;casing&rdquo; attends to each position</span>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage">
+          <span class="stage-title" id="nextTokenLabel">P(next token)</span>
+          <div class="next-token-mini" id="miniBars"></div>
         </div>
       </div>
     </div>
@@ -541,6 +555,28 @@
       <button class="cta" id="openPaper">Enter paper mode</button>
     </div>
   </section>
+
+  </div><!-- /changeItView -->
+
+  <div id="calculateItView" style="display:none;">
+    <section>
+      <p class="maths-note" style="margin-bottom:16px;">Same W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, W<sub>Out</sub> as always &mdash; but X and the training update now come from <b style="color:var(--text);">your current sliders above</b> (embedding value, learning rate), not a fixed example. Work out each quantity yourself, then reveal it before moving on. Changing a slider resets you to Step 1, since the numbers change underneath you.</p>
+      <div class="paper-sheet" style="width:100%; max-width:none;">
+        <div class="paper-inner">
+          <div class="paper-step-label" id="calcStepLabel">Step 1 of 9</div>
+          <h2 id="calcTitle"></h2>
+          <div class="paper-given" id="calcGiven"></div>
+          <div class="paper-prompt" id="calcPrompt"></div>
+          <div class="paper-answer" id="calcAnswer" style="display:none;"></div>
+          <div class="paper-nav">
+            <button id="calcPrev">&larr; Previous</button>
+            <button class="reveal" id="calcReveal">Show answer</button>
+            <button id="calcNext">Next &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 
   <footer>
     <p>Built and numerically verified in Wolfram Mathematica (34 automated checks: matrix dimensions, softmax sums, causal-mask behaviour, gradient sign, that P(&ldquo;shoe&rdquo;) rises while loss falls after the update, and that the same holds when retargeted at &ldquo;cement&rdquo; &mdash; see the <a href="./notebook.html">full notebook</a>). This page reimplements those exact, already-checked equations in plain JavaScript &mdash; nothing here is estimated or re-derived independently.</p>
@@ -645,7 +681,9 @@
   function pct(x){ return (x*100).toFixed(1)+"%"; }
 
   /* ---------------- state ---------------- */
-  var state = { lr:2, emb:1, steps:0 };
+  var state = { lr:2, emb:1, steps:0, mode:"change" };
+  var lastBase = null, lastGrad = null;
+  var calcIdx = 0;
 
   var lrSlider = document.getElementById("lrSlider");
   var embSlider = document.getElementById("embSlider");
@@ -667,6 +705,26 @@
     render();
   });
   setSliderPct(lrSlider); setSliderPct(embSlider);
+
+  var modeSwitch = document.getElementById("modeSwitch");
+  var changeItView = document.getElementById("changeItView");
+  var calculateItView = document.getElementById("calculateItView");
+  var modeHint = document.getElementById("modeHint");
+  modeSwitch.addEventListener("click", function(e){
+    var btn = e.target.closest("button"); if(!btn) return;
+    state.mode = btn.getAttribute("data-m");
+    Array.prototype.forEach.call(modeSwitch.querySelectorAll("button"), function(b){ b.classList.toggle("on", b===btn); });
+    if(state.mode==="calculate"){
+      changeItView.style.display = "none";
+      calculateItView.style.display = "block";
+      modeHint.textContent = "Work out Q, K, V, attention, softmax, the loss, and the gradient yourself, one step at a time.";
+      calcIdx = 0; renderCalc();
+    } else {
+      changeItView.style.display = "block";
+      calculateItView.style.display = "none";
+      modeHint.textContent = "Drag the sliders below and watch every number update live.";
+    }
+  });
 
   /* ---------------- rendering ---------------- */
   var attnGrid = document.getElementById("attnGrid");
@@ -773,6 +831,8 @@
     var base = forwardPass(state.emb, WOUT);
     var grad = gradientStep(base, state.lr);
     var after = forwardPass(state.emb, grad.wOutNew);
+    lastBase = base; lastGrad = grad;
+    if(state.mode==="calculate" && typeof renderCalc==="function"){ calcIdx = 0; renderCalc(); }
 
     var pBefore = base.probs[TARGET_IDX], lossBefore = -Math.log(pBefore);
     var pAfter = state.steps===1 ? after.probs[TARGET_IDX] : pBefore;
@@ -840,63 +900,67 @@
 
   function pm(name, M, d){ return matbox(name, M, {d:d===undefined?3:d}); }
 
-  var steps = [
-    {
-      title: "Step 1 — Query vectors",
-      given: pm("X", CANON.X, 0) + pm("W_Q", WQ, 0),
-      prompt: "Calculate Q = X &middot; W_Q",
-      answer: pm("Q", CANON.Q, 0)
-    },
-    {
-      title: "Step 2 — Key vectors",
-      given: pm("X", CANON.X, 0) + pm("W_K", WK, 0),
-      prompt: "Calculate K = X &middot; W_K",
-      answer: pm("K", CANON.K, 0)
-    },
-    {
-      title: "Step 3 — Value vectors",
-      given: pm("X", CANON.X, 0) + pm("W_V", WV, 0),
-      prompt: "Calculate V = X &middot; W_V",
-      answer: pm("V", CANON.V, 0)
-    },
-    {
-      title: "Step 4 — Raw attention scores",
-      given: pm("Q", CANON.Q, 0) + pm("K", CANON.K, 0),
-      prompt: "Calculate Q &middot; Kᵀ (transpose K, then multiply)",
-      answer: pm("Q · Kᵀ", CANON.raw, 0)
-    },
-    {
-      title: "Step 5 — Scale and mask",
-      given: pm("Q · Kᵀ", CANON.raw, 0) + "<div class='paper-mat'><div class='mname'>d</div><div class='cell'>2</div></div>",
-      prompt: "Divide every entry by √2. Then: position 1 (“run”) may not look at position 2 (“casing”) &mdash; it hasn't happened yet from “run”'s point of view. Replace that one entry with −∞.",
-      answer: pm("masked scores", CANON.masked, 3)
-    },
-    {
-      title: "Step 6 — Softmax the attention scores",
-      given: pm("masked scores", CANON.masked, 3),
-      prompt: "Apply softmax to each row: exponentiate, then divide by the row's sum. (A −∞ entry exponentiates to 0.)",
-      answer: pm("attention weights", CANON.attn, 4)
-    },
-    {
-      title: "Step 7 — Weighted value / attention output",
-      given: pm("attention weights", CANON.attn, 4) + pm("V", CANON.V, 0),
-      prompt: "Calculate attention weights &middot; V, then take row 2 (the “casing” position) &mdash; call it h.",
-      answer: pm("h", CANON.h, 4)
-    },
-    {
-      title: "Step 8 — Logits and P(“shoe”)",
-      given: pm("h", CANON.h, 4) + pm("W_Out", WOUT, 0),
-      prompt: "Calculate logits = h &middot; W_Out, then softmax them to get probabilities. Read off the entry for “shoe” (4th token).",
-      answer: pm("logits", CANON.logits, 3) + pm("P", CANON.probs, 4) + "<p style='margin-top:8px;'>P(“shoe”) = "+fmt(CANON.probs[TARGET_IDX],4)+"</p>"
-    },
-    {
-      title: "Step 9 — Loss, gradient, and the update",
-      given: pm("P", CANON.probs, 4) + "<div class='paper-mat'><div class='mname'>target</div><div class='cell'>shoe (id 4)</div></div>",
-      prompt: "Loss = −ln(P(“shoe”)). Gradient: dLogits = P &minus; one-hot(shoe). dW_Out = outer(h, dLogits). With learning rate 2: W_Out,new = W_Out &minus; 2&middot;dW_Out.",
-      answer: "<p>Loss = "+fmt(-Math.log(CANON.probs[TARGET_IDX]),4)+"</p>" + pm("dLogits", CANON_GRAD.dLogits,3) + pm("W_Out,new", CANON_GRAD.wOutNew,3)
-    }
-  ];
+  function buildSteps(fp, grad, lr){
+    var lrStr = fmt(lr, lr===Math.round(lr)?0:1);
+    return [
+      {
+        title: "Step 1 — Query vectors",
+        given: pm("X", fp.X, 0) + pm("W_Q", WQ, 0),
+        prompt: "Calculate Q = X &middot; W_Q",
+        answer: pm("Q", fp.Q, 3)
+      },
+      {
+        title: "Step 2 — Key vectors",
+        given: pm("X", fp.X, 0) + pm("W_K", WK, 0),
+        prompt: "Calculate K = X &middot; W_K",
+        answer: pm("K", fp.K, 3)
+      },
+      {
+        title: "Step 3 — Value vectors",
+        given: pm("X", fp.X, 0) + pm("W_V", WV, 0),
+        prompt: "Calculate V = X &middot; W_V",
+        answer: pm("V", fp.V, 3)
+      },
+      {
+        title: "Step 4 — Raw attention scores",
+        given: pm("Q", fp.Q, 3) + pm("K", fp.K, 3),
+        prompt: "Calculate Q &middot; Kᵀ (transpose K, then multiply)",
+        answer: pm("Q · Kᵀ", fp.raw, 3)
+      },
+      {
+        title: "Step 5 — Scale and mask",
+        given: pm("Q · Kᵀ", fp.raw, 3) + "<div class='paper-mat'><div class='mname'>d</div><div class='cell'>2</div></div>",
+        prompt: "Divide every entry by √2. Then: position 1 (“run”) may not look at position 2 (“casing”) &mdash; it hasn't happened yet from “run”'s point of view. Replace that one entry with −∞.",
+        answer: pm("masked scores", fp.masked, 3)
+      },
+      {
+        title: "Step 6 — Softmax the attention scores",
+        given: pm("masked scores", fp.masked, 3),
+        prompt: "Apply softmax to each row: exponentiate, then divide by the row's sum. (A −∞ entry exponentiates to 0.)",
+        answer: pm("attention weights", fp.attn, 4)
+      },
+      {
+        title: "Step 7 — Weighted value / attention output",
+        given: pm("attention weights", fp.attn, 4) + pm("V", fp.V, 3),
+        prompt: "Calculate attention weights &middot; V, then take row 2 (the “casing” position) &mdash; call it h.",
+        answer: pm("h", fp.h, 4)
+      },
+      {
+        title: "Step 8 — Logits and P(“shoe”)",
+        given: pm("h", fp.h, 4) + pm("W_Out", WOUT, 0),
+        prompt: "Calculate logits = h &middot; W_Out, then softmax them to get probabilities. Read off the entry for “shoe” (4th token).",
+        answer: pm("logits", fp.logits, 3) + pm("P", fp.probs, 4) + "<p style='margin-top:8px;'>P(“shoe”) = "+fmt(fp.probs[TARGET_IDX],4)+"</p>"
+      },
+      {
+        title: "Step 9 — Loss, gradient, and the update",
+        given: pm("P", fp.probs, 4) + "<div class='paper-mat'><div class='mname'>target</div><div class='cell'>shoe (id 4)</div></div>",
+        prompt: "Loss = −ln(P(“shoe”)). Gradient: dLogits = P &minus; one-hot(shoe). dW_Out = outer(h, dLogits). With learning rate "+lrStr+": W_Out,new = W_Out &minus; "+lrStr+"&middot;dW_Out.",
+        answer: "<p>Loss = "+fmt(-Math.log(fp.probs[TARGET_IDX]),4)+"</p>" + pm("dLogits", grad.dLogits,3) + pm("W_Out,new", grad.wOutNew,3)
+      }
+    ];
+  }
 
+  var steps = buildSteps(CANON, CANON_GRAD, 2);
   var paperIdx = 0;
   var paperBackdrop = document.getElementById("paperBackdrop");
   var paperStepLabel = document.getElementById("paperStepLabel");
@@ -937,6 +1001,39 @@
     if(!paperBackdrop.classList.contains("open")) return;
     if(e.key==="Escape") paperBackdrop.classList.remove("open");
   });
+
+  /* ---------------- calculate it: same 9 steps, live slider state ---------------- */
+  var calcStepLabel = document.getElementById("calcStepLabel");
+  var calcTitle = document.getElementById("calcTitle");
+  var calcGiven = document.getElementById("calcGiven");
+  var calcPrompt = document.getElementById("calcPrompt");
+  var calcAnswer = document.getElementById("calcAnswer");
+  var calcReveal = document.getElementById("calcReveal");
+  var calcPrev = document.getElementById("calcPrev");
+  var calcNext = document.getElementById("calcNext");
+
+  function renderCalc(){
+    if(!lastBase || !lastGrad) return;
+    var liveSteps = buildSteps(lastBase, lastGrad, state.lr);
+    var s = liveSteps[calcIdx];
+    calcStepLabel.textContent = "Step "+(calcIdx+1)+" of "+liveSteps.length+" — embedding "+state.emb.toFixed(1)+", learning rate "+state.lr.toFixed(1);
+    calcTitle.textContent = s.title;
+    calcGiven.innerHTML = "<div class='row'>"+s.given+"</div>";
+    calcPrompt.innerHTML = s.prompt;
+    calcAnswer.innerHTML = s.answer;
+    calcAnswer.style.display = "none";
+    calcReveal.textContent = "Show answer";
+    calcPrev.disabled = calcIdx===0;
+    calcNext.disabled = calcIdx===liveSteps.length-1;
+  }
+
+  calcReveal.addEventListener("click", function(){
+    var showing = calcAnswer.style.display !== "none";
+    calcAnswer.style.display = showing ? "none" : "block";
+    calcReveal.textContent = showing ? "Show answer" : "Hide answer";
+  });
+  calcPrev.addEventListener("click", function(){ if(calcIdx>0){ calcIdx--; renderCalc(); } });
+  calcNext.addEventListener("click", function(){ if(calcIdx<8){ calcIdx++; renderCalc(); } });
 
 })();
 </script>
