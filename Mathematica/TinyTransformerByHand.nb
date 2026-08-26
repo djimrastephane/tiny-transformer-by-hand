@@ -268,9 +268,10 @@ N[logits, 4]}], {\"Token\", \"Logit\"}],\n  Frame -> All, Background -> \
 {None, {LightGray, None}}]"], "Input"], Cell["These are logits, not \
 probabilities: they can be negative (cement, <EOS>), they do not sum to 1, \
 and by themselves they only rank tokens relative to each other. \"shoe\" and \
-\"run\" currently have the two largest logits, with \"shoe\" barely behind. \
-The next section turns these into an actual probability distribution.", 
-   "Text"], Cell["Optional / advanced: what a feed-forward layer would add", 
+\"run\" currently have the two largest logits, with \"run\"'s roughly twice \
+\"shoe\"'s. The next section turns these into an actual probability \
+distribution.", "Text"], 
+  Cell["Optional / advanced: what a feed-forward layer would add", 
    "Subsection"], Cell["Logits = h . WOut is a single linear map. Stacking \
 more linear maps does not change that \[LongDash] matrix multiplications \
 compose into one matrix multiplication. The only source of nonlinearity \
@@ -320,20 +321,21 @@ All, Background -> {None, {LightGray, None}}]"], "Input"],
 -1]];\n{\"target\" -> Vocabulary[[targetIndex]], \"predicted (highest \
 probability)\" -> Vocabulary[[predictedIndex]]}"], "Input"], 
   Cell["Before any training, the model's highest-probability guess is \"run\" \
-(~28.0%), not the correct answer \"shoe\" (~20.1%, third-highest). That \
-mismatch between prediction and target is exactly what training will correct \
-in Sections 11-14.", "Text"], Cell["11. Cross-Entropy Loss", "Section"], 
-  Cell["We need a single number that measures how wrong this prediction was, \
-given that the true next token is \"shoe\". Cross-entropy loss for a single \
-example is:\n\nLoss = -Log[P(correct token)]\n\nPlain-language reading: if \
-the model had assigned probability 1 to the correct token, -Log[1] = 0 \
-\[LongDash] no loss, a perfect prediction. As the assigned probability \
-shrinks toward 0, -Log[p] grows without bound \[LongDash] a heavy penalty for \
-confidently ruling out the right answer. It is not a distance or an error \
-bar; it is a measure of \"how surprised the model should be\" about the true \
-answer, in the specific sense used throughout information theory and \
-statistics.", "Text"], Cell[BoxData["pShoe = probabilities[[targetIndex]]"], 
-   "Input"], Cell[BoxData["loss = -Log[pShoe]"], "Input"], 
+(~28.0%), not the correct answer \"shoe\" (~20.1%, second-highest \[LongDash] \
+just ahead of \"casing\" at ~19.9%). That mismatch between prediction and \
+target is exactly what training will correct in Sections 11-14.", "Text"], 
+  Cell["11. Cross-Entropy Loss", "Section"], Cell["We need a single number \
+that measures how wrong this prediction was, given that the true next token \
+is \"shoe\". Cross-entropy loss for a single example is:\n\nLoss = \
+-Log[P(correct token)]\n\nPlain-language reading: if the model had assigned \
+probability 1 to the correct token, -Log[1] = 0 \[LongDash] no loss, a \
+perfect prediction. As the assigned probability shrinks toward 0, -Log[p] \
+grows without bound \[LongDash] a heavy penalty for confidently ruling out \
+the right answer. It is not a distance or an error bar; it is a measure of \
+\"how surprised the model should be\" about the true answer, in the specific \
+sense used throughout information theory and statistics.", "Text"], 
+  Cell[BoxData["pShoe = probabilities[[targetIndex]]"], "Input"], 
+  Cell[BoxData["loss = -Log[pShoe]"], "Input"], 
   Cell["P(\"shoe\") \[TildeEqual] 0.2012, so the loss is -Log[0.2012] \
 \[TildeEqual] 1.604. Section 14 will show this number falling after one \
 training update.", "Text"], Cell["12. One Training Step", "Section"], 
@@ -422,7 +424,7 @@ are not uniform. Column 4 (\"shoe\") moved the most, and in the direction \
 that increases its logit:", "Text"], 
   Cell[BoxData["MatrixForm[N[WOutNew - WOut, 4]]"], "Input"], 
   Cell["Column 4 shows the two largest-magnitude changes in the entire matrix \
-(+2.070 and +0.528 relative to the old weights), both positive \[LongDash] a \
+(+1.070 and +0.528 relative to the old weights), both positive \[LongDash] a \
 direct, visible consequence of \"shoe\" being the one column of dLogits that \
 was negative.", "Text"], Cell["14. Run the Model Again", "Section"], 
   Cell["Q, K, V, and the attention output h did not change (Section 12), so \
@@ -498,33 +500,50 @@ feeds directly into X, Q, K, V, and everything downstream). Moving any slider \
 recomputes the entire forward pass from scratch and redraws the attention \
 weights, the next-token probability bar chart, P(\"shoe\"), and the loss.", 
    "Text"], Cell[BoxData["Manipulate[\n  Module[{emb, xLoc, qLoc, kLoc, vLoc, \
-rawLoc, scaledLoc, maskedLoc, attnLoc,\n    attnOutLoc, hLoc, wOutLoc, \
-logitsLoc, probsLoc, pShoeLoc, lossLoc},\n   emb = EmbeddingMatrix;\n   \
-emb[[3, 2]] = casingCoord2;\n   xLoc = emb[[tokenIDs]];\n   qLoc = xLoc.WQ; \
-kLoc = xLoc.WK; vLoc = xLoc.WV;\n   rawLoc = qLoc.Transpose[kLoc];\n   \
-scaledLoc = N[rawLoc/Sqrt[2]];\n   maskedLoc = {{scaledLoc[[1, 1]], \
--Infinity}, {scaledLoc[[2, 1]], scaledLoc[[2, 2]]}};\n   attnLoc = SoftmaxRow \
-/@ maskedLoc;\n   attnOutLoc = attnLoc.vLoc;\n   hLoc = attnOutLoc[[2]];\n   \
-wOutLoc = WOut;\n   wOutLoc[[1, 4]] = wOut14;\n   logitsLoc = hLoc.wOutLoc;\n \
-  probsLoc = Softmax2[logitsLoc];\n   pShoeLoc = probsLoc[[targetIndex]];\n   \
-lossLoc = -Log[pShoeLoc];\n   Column[{\n     Grid[{{\"attention weights (row \
-2, \\\"casing\\\")\",\n        NumberForm[attnLoc[[2]], {4, 3}]}}],\n     \
-BarChart[probsLoc, ChartLabels -> Vocabulary, ChartStyle -> \"Pastel\",\n     \
- PlotRange -> {0, 1}, ImageSize -> 380],\n     Grid[{\n       \
-{\"P(\\\"shoe\\\")\", NumberForm[pShoeLoc, {5, 4}]},\n       {\"Loss\", \
-NumberForm[lossLoc, {5, 4}]}\n       }, Frame -> All]\n     }]\n   ],\n  \
-{{learningRateM, 2, \"learning rate (unused above, shown for Section 13 \
-intuition)\"}, 0, 4, 0.1},\n  {{wOut14, 1, \"WOut[[1,4]]  (weight feeding \
-\\\"shoe\\\"'s logit)\"}, -3, 3, 0.1},\n  {{casingCoord2, 1, \"casing \
-embedding, 2nd coordinate\"}, -2, 2, 0.1}\n  ]"], "Input"], 
-  Cell["Try pushing wOut14 higher: P(\"shoe\") should rise, and the loss \
-should fall, mirroring exactly what one gradient step did automatically in \
-Sections 12-14. Try moving the casing embedding coordinate away from its \
+rawLoc, scaledLoc, maskedLoc, attnLoc,\n    attnOutLoc, hLoc, wOutStart, \
+logitsLoc, probsLoc, pShoeLoc, lossLoc,\n    oneHotLoc, dLogitsLoc, dWOutLoc, \
+wOutAfter, logitsAfter, probsAfter, pShoeAfter, lossAfter},\n   emb = \
+EmbeddingMatrix;\n   emb[[3, 2]] = casingCoord2;\n   xLoc = \
+emb[[tokenIDs]];\n   qLoc = xLoc.WQ; kLoc = xLoc.WK; vLoc = xLoc.WV;\n   \
+rawLoc = qLoc.Transpose[kLoc];\n   scaledLoc = N[rawLoc/Sqrt[2]];\n   \
+maskedLoc = {{scaledLoc[[1, 1]], -Infinity}, {scaledLoc[[2, 1]], \
+scaledLoc[[2, 2]]}};\n   attnLoc = SoftmaxRow /@ maskedLoc;\n   attnOutLoc = \
+attnLoc.vLoc;\n   hLoc = attnOutLoc[[2]];\n   (* wOutStart: WOut with just \
+the [[1,4]] entry replaced -- the starting point for this update *)\n   \
+wOutStart = WOut;\n   wOutStart[[1, 4]] = wOut14;\n   logitsLoc = \
+hLoc.wOutStart;\n   probsLoc = Softmax2[logitsLoc];\n   pShoeLoc = \
+probsLoc[[targetIndex]];\n   lossLoc = -Log[pShoeLoc];\n   (* apply one real \
+gradient-descent step, at the chosen learning rate, starting from wOutStart \
+*)\n   oneHotLoc = ReplacePart[ConstantArray[0, 6], targetIndex -> 1];\n   \
+dLogitsLoc = probsLoc - oneHotLoc;\n   dWOutLoc = Outer[Times, hLoc, \
+dLogitsLoc];\n   wOutAfter = wOutStart - learningRateM*dWOutLoc;\n   \
+logitsAfter = hLoc.wOutAfter;\n   probsAfter = Softmax2[logitsAfter];\n   \
+pShoeAfter = probsAfter[[targetIndex]];\n   lossAfter = -Log[pShoeAfter];\n   \
+Column[{\n     Grid[{{\"attention weights (row 2, \\\"casing\\\")\",\n        \
+NumberForm[attnLoc[[2]], {4, 3}]}}],\n     BarChart[probsAfter, ChartLabels \
+-> Vocabulary, ChartStyle -> \"Pastel\",\n      PlotRange -> {0, 1}, \
+ImageSize -> 380,\n      PlotLabel -> \"P(next token) after this update\"],\n \
+    Grid[{\n       {\"\", \"before this update\", \"after this update\"},\n   \
+    {\"P(\\\"shoe\\\")\", NumberForm[pShoeLoc, {5, 4}], \
+NumberForm[pShoeAfter, {5, 4}]},\n       {\"Loss\", NumberForm[lossLoc, {5, \
+4}], NumberForm[lossAfter, {5, 4}]}\n       }, Frame -> All]\n     }]\n   \
+],\n  {{learningRateM, 2, \"learning rate\"}, 0, 4, 0.1},\n  {{wOut14, 1, \
+\"WOut[[1,4]] before this update (weight feeding \\\"shoe\\\"'s logit)\"}, \
+-3, 3, 0.1},\n  {{casingCoord2, 1, \"casing embedding, 2nd coordinate\"}, -2, \
+2, 0.1}\n  ]"], "Input"], Cell["At the default slider positions (learning \
+rate 2, WOut[[1,4]] = 1, casing embedding = 1) this exactly reproduces \
+Sections 9-14: before/after P(\"shoe\") of 0.2012 and 0.4315, before/after \
+loss of 1.6035 and 0.8404. From there: push the learning rate to 0 and the \
+before/after columns become identical (no update, no change) \[LongDash] push \
+it toward 4 and the same gradient takes a much bigger step. Try a worse \
+starting point (drag WOut[[1,4]] down toward -1) and see how much of that one \
+update can recover. Try moving the casing embedding coordinate away from its \
 original value of 1: because \"casing\"'s embedding feeds X, Q, K, V, and the \
 attention weights, this single number reaches every stage of the computation, \
-not just the last one.", "Text"], Cell["Try It Without Mathematica", 
-   "Section"], Cell["Everything below can be reproduced with paper, a pencil, \
-and a calculator with e^x and ln buttons. All of the given values below were \
+including the gradient itself, not just the last one.", "Text"], 
+  Cell["Try It Without Mathematica", "Section"], 
+  Cell["Everything below can be reproduced with paper, a pencil, and a \
+calculator with e^x and ln buttons. All of the given values below were \
 introduced earlier in this notebook \[LongDash] nothing here is new.", 
    "Text"], Cell["Given", "Subsection"], Cell["Vocabulary (token : ID)\n  \
 <BOS>:1   run:2   casing:3   shoe:4   cement:5   <EOS>:6\n\nInput tokens: \
