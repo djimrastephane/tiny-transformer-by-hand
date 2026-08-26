@@ -1,0 +1,225 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(* Beginning of Notebook Content *)
+Notebook[{Cell["Tiny LoRA, By Hand", "Title"], 
+  Cell["Freezing a tiny transformer and training a rank-1 correction instead \
+-- worked entirely by hand, and checked against one full fine-tuning step on \
+the same example", "Subtitle"], Cell["This notebook is a companion to \
+TinyTransformerByHand.nb. It assumes you have already read that notebook (or \
+at least know its setup): a 2-token sequence \"run casing\", a 2-dimensional \
+embedding, one attention head, one block, and a single training example that \
+nudges the model toward predicting \"shoe\". Everything about the frozen part \
+of the model -- the vocabulary, the embeddings, WQ, WK, WV, and the starting \
+value of WOut -- is identical here.", "Text"], Cell["What changes here is how \
+we train. Instead of updating every one of WOut's 12 numbers directly (\"full \
+fine-tuning\", what the main notebook does), we freeze WOut completely and \
+train a small add-on: a rank-1 correction \[CapitalDelta]W = B . A, where B \
+is 2\[Times]1 and A is 1\[Times]6. This is LoRA (Low-Rank Adaptation), a real \
+technique used to adapt large language models cheaply. In a model with \
+billions of parameters, freezing W and training a tiny B and A instead of all \
+of W is a huge saving. In our 2\[Times]6 WOut, the saving is not dramatic -- \
+8 numbers instead of 12 -- but the mechanism is exactly the same, and it is \
+small enough to compute every step by hand.", "Text"], 
+  Cell["1. Recap: The Frozen Model", "Section"], 
+  Cell["These are the same values as TinyTransformerByHand.nb. Nothing here \
+is retrained -- WQ, WK, WV, and the embeddings stay fixed for the entire \
+notebook, and WOut itself (as opposed to the correction we add to it) never \
+changes either.", "Text"], Cell[BoxData["Vocabulary = {\"<BOS>\", \"run\", \
+\"casing\", \"shoe\", \"cement\", \"<EOS>\"};\nEmbeddingMatrix = {\n  {0, \
+0},\n  {1, 0},\n  {0, 1},\n  {1, 1},\n  {-1, 1},\n  {0, -1}\n};\nWQ = {{1, \
+0}, {1, 1}};\nWK = {{1, 1}, {0, 1}};\nWV = {{1, 0}, {0, 1}};\nWOut = {\n  {0, \
+1, 0,  1, -1,  0},\n  {0, 0, 1, -1,  0, -1}\n};\nlearningRate = 2;"], 
+   "Input"], Cell[BoxData["inputTokens = {\"run\", \"casing\"};\ntokenIDs = \
+Flatten[Position[Vocabulary, #] & /@ inputTokens];\nX = \
+EmbeddingMatrix[[tokenIDs]];\nQ = X.WQ; K = X.WK; V = X.WV;\nrawScores = \
+Q.Transpose[K];\nscaledScores = N[rawScores/Sqrt[2]];\nmaskedScores = {\n  \
+{scaledScores[[1, 1]], -Infinity},\n  {scaledScores[[2, 1]], scaledScores[[2, \
+2]]}\n};\nsoftmaxRow[row_] := Module[{finite, m, ex},\n  finite = Select[row, \
+# > -Infinity &];\n  m = Max[finite];\n  ex = If[# > -Infinity, Exp[# - m], \
+0] & /@ row;\n  ex/Total[ex]\n];\nattentionWeights = softmaxRow /@ \
+maskedScores;\nattentionOutput = attentionWeights.V;\nh = \
+attentionOutput[[2]];\nh"], "Input"], Cell["h \[TildeEqual] {0.6698, 0.3302}. \
+This is the representation the model uses to predict the token after \"run \
+casing\". Notice that h only depends on the embeddings and on WQ, WK, WV \
+through the attention mechanism -- it never touches WOut. That means h is \
+exactly the same number in every section of this notebook, no matter what we \
+do to WOut or to its LoRA correction. Only the final projection step (h times \
+whatever WOut-plus-correction currently is) changes.", "Text"], 
+  Cell["2. Full Fine-Tuning, Recapped", "Section"], 
+  Cell["This is the one training step from the main notebook, repeated here \
+as the baseline we are comparing LoRA against.", "Text"], 
+  Cell[BoxData["logits = h.WOut;\nsoftmaxVec[z_] := Module[{m = Max[z], ex}, \
+ex = Exp[z - m]; ex/Total[ex]];\nprobabilities = \
+softmaxVec[logits];\ntargetIndex = First[Flatten[Position[Vocabulary, \
+\"shoe\"]]];\npShoeBefore = probabilities[[targetIndex]]\nlossBefore = \
+-Log[pShoeBefore]"], "Input"], Cell["P(shoe) before any training is ~20.1%, \
+and the loss is ~1.604 -- the same numbers as the main notebook's Section 9, \
+since this is the same model.", "Text"], 
+  Cell[BoxData["oneHot = ReplacePart[ConstantArray[0, 6], targetIndex -> \
+1];\ndLogits = probabilities - oneHot;\ndWOut = Outer[Times, h, \
+dLogits];\nMatrixForm[dWOut]"], "Input"], 
+  Cell[BoxData["WOutFull = WOut - learningRate*dWOut;\nlogitsFull = \
+h.WOutFull;\nprobabilitiesFull = softmaxVec[logitsFull];\npShoeFull = \
+probabilitiesFull[[targetIndex]]\nlossFull = -Log[pShoeFull]"], "Input"], 
+  Cell["After this one step of full fine-tuning, P(shoe) rises to ~43.2% and \
+the loss falls to ~0.840. Every one of WOut's 12 numbers moved to make that \
+happen -- dWOut has no zero entries.", "Text"], 
+  Cell["3. The LoRA Idea: Freeze W, Learn a Low-Rank Correction", "Section"], 
+  Cell["Instead of replacing WOut with WOut - learningRate*dWOut, LoRA leaves \
+WOut untouched forever and adds a correction: WOutEffective = WOut + \
+\[CapitalDelta]W, where \[CapitalDelta]W = B . A. B and A are chosen to be \
+\"thin\": if WOut is m\[Times]n (here 2\[Times]6), B is m\[Times]r and A is \
+r\[Times]n for some small rank r, so \[CapitalDelta]W is still m\[Times]n but \
+is built from only r*(m+n) numbers instead of m*n. We use r = 1, the smallest \
+possible rank, so that every step is small enough to check by hand: B is \
+2\[Times]1 (2 numbers) and A is 1\[Times]6 (6 numbers) -- 8 numbers total, \
+versus WOut's 12.", "Text"], Cell["In a real language model, WOut-sized \
+matrices have millions of entries and m, n are both huge, so r*(m+n) can be \
+thousands of times smaller than m*n -- that is where LoRA's real saving comes \
+from. Here, with m=2 and n=6, r=1 saves only a third of the numbers. We keep \
+r=1 anyway because the point of this notebook is the mechanism, not the \
+saving, and rank 1 is the only rank small enough to multiply out by hand.", 
+   "Text"], Cell["4. Setting Up B and A", "Section"], 
+  Cell["Standard LoRA practice initializes one factor to zero (usually B) so \
+that training starts as a complete no-op: \[CapitalDelta]W = B.A = 0, meaning \
+WOutEffective = WOut exactly, and the model behaves identically to the \
+untrained base model until training actually moves something. The other \
+factor (A) is initialized to some fixed nonzero values (ordinarily at random; \
+this notebook has no randomness anywhere, so we fix a simple deterministic \
+pattern instead).", "Text"], Cell[BoxData["B0 = {{0}, {0}};\nA0 = {{1, -1, 1, \
+-1, 1, -1}};\ndeltaW0 = B0.A0\nWOutEffective0 = WOut + \
+deltaW0;\nWOutEffective0 == WOut"], "Input"], Cell["\[CapitalDelta]W0 is the \
+zero matrix, so WOutEffective0 is bit-for-bit identical to WOut. If we ran \
+the forward pass right now, we would get exactly the same P(shoe) \
+\[TildeEqual] 20.1% and loss \[TildeEqual] 1.604 as Section 2's starting \
+point -- LoRA has not changed the model's behavior yet.", "Text"], 
+  Cell["5. Step 1: The Gradient Through B and A", "Section"], 
+  Cell["Because \[CapitalDelta]W = B.A enters the logits the same way WOut \
+does (logits = h.(WOut + B.A)), the gradient of the loss with respect to \
+\[CapitalDelta]W is the same dWOut we already computed in Section 2 -- call \
+it G. What is new is propagating G through the product B.A into separate \
+gradients for B and A, by the usual matrix-calculus rule for a product: if \
+\[CapitalDelta]W = B.A, then dL/dB = G.Transpose[A] and dL/dA = \
+Transpose[B].G.", "Text"], Cell[BoxData["G = dWOut; (* same gradient as the \
+full fine-tune step, since WOutEffective0 = WOut *)\ndA0 = \
+Transpose[B0].G\ndB0 = G.Transpose[A0]"], "Input"], 
+  Cell["dA0 comes out as the zero vector. This is not a coincidence or a bug: \
+dA = Transpose[B].G, and B0 is zero, so no matter what G is, dA0 must be \
+zero. Intuitively, A's only effect on the model is through B.A -- if B is \
+zero, scaling A up or down does not change B.A at all, so the loss has no way \
+of \"feeling\" A yet. dB0, by contrast, does not depend on B at all (dB = \
+G.Transpose[A]), so it is free to be nonzero as soon as A and G are not \
+orthogonal -- which they are not here.", "Text"], 
+  Cell["6. Step 1: Updating B and A", "Section"], 
+  Cell[BoxData[
+    "B1 = B0 - learningRate*dB0\nA1 = A0 - learningRate*dA0\nA1 == A0"], 
+   "Input"], Cell["B1 is a new pair of numbers; A1 is identical to A0, \
+confirmed above. Of the 8 numbers that make up B and A, exactly 2 moved this \
+step -- the same conclusion RunLoRAChecks[] in Appendix A checks \
+automatically.", "Text"], Cell["7. Step 1: Does It Work?", "Section"], 
+  Cell[BoxData["deltaW1 = B1.A1;\nWOutEffective1 = WOut + \
+deltaW1;\nlogitsLoRA1 = h.WOutEffective1;\nprobabilitiesLoRA1 = \
+softmaxVec[logitsLoRA1];\npShoeLoRA1 = \
+probabilitiesLoRA1[[targetIndex]]\nlossLoRA1 = -Log[pShoeLoRA1]"], "Input"], 
+  Cell["P(shoe) after LoRA's first step is ~31.0%, and the loss falls to \
+~1.171 -- real progress, moving only 2 numbers. But the model's top \
+prediction is still wrong: \"run\" is now at ~43.1%, still ahead of \"shoe\". \
+Full fine-tuning's single step does better on both counts (43.2% / 0.840, and \
+its top prediction has already flipped to \"shoe\"), which makes sense: it \
+has the full 12-number capacity of WOut to work with, while LoRA's first step \
+only gets to use 2 of its 8.", "Text"], 
+  Cell[BoxData["pct[x_] := ToString[NumberForm[100 x, {3, 1}]] <> \
+\"%\";\nfnum[x_] := ToString[NumberForm[x, {4, 3}]];\nGrid[\n  Prepend[\n   \
+{{\"Before training\", pct[pShoeBefore], fnum[lossBefore], \"-\"},\n    \
+{\"Full fine-tune, 1 step\", pct[pShoeFull], fnum[lossFull], \"12 (all of \
+WOut)\"},\n    {\"LoRA, 1 step\", pct[pShoeLoRA1], fnum[lossLoRA1], \"2 (just \
+B)\"}},\n   {\"Stage\", \"P(shoe)\", \"Loss\", \"Numbers moved\"}],\n  Frame \
+-> All, Alignment -> Left, Spacings -> {2, 1}\n]"], "Input"], 
+  Cell["8. Bonus: Give LoRA One More Step", "Section"], 
+  Cell["Now that B1 is nonzero, A should no longer be stuck: dA = \
+Transpose[B].G depends on B, and B is no longer zero. Let's recompute the \
+gradient at the new effective weights and take a second LoRA step.", "Text"], 
+  Cell[BoxData["G1 = Outer[Times, h, probabilitiesLoRA1 - oneHot];\ndA1 = \
+Transpose[B1].G1\ndB1 = G1.Transpose[A1];\nB2 = B1 - learningRate*dB1;\nA2 = \
+A1 - learningRate*dA1;"], "Input"], Cell["dA1 is no longer all zero -- as \
+soon as B carries any signal, A starts receiving a real gradient too. This is \
+a genuine, well-known property of LoRA training in practice, not a \
+simplification specific to this toy: with the standard zero-initialization of \
+B, the very first step only ever trains B, and every step after that trains \
+both factors together.", "Text"], 
+  Cell[BoxData["deltaW2 = B2.A2;\nWOutEffective2 = WOut + \
+deltaW2;\nlogitsLoRA2 = h.WOutEffective2;\nprobabilitiesLoRA2 = \
+softmaxVec[logitsLoRA2];\npShoeLoRA2 = \
+probabilitiesLoRA2[[targetIndex]]\nlossLoRA2 = -Log[pShoeLoRA2]"], "Input"], 
+  Cell["P(shoe) after LoRA's second step jumps to ~79.7%, with the loss down \
+to ~0.226 -- LoRA's second step, still touching only 8 numbers at most, \
+overtakes full fine-tuning's single 12-number step. The top prediction also \
+flips to \"shoe\" for the first time here (it was still \"run\" after step \
+1). This is not a general law (it depends on the learning rate, the \
+initialization of A, and the fact that our loss surface is simple and \
+convex-ish at this scale) but it is a real, checked result for this exact \
+example, not a cherry-picked claim: see Appendix A.", "Text"], 
+  Cell[BoxData["Grid[\n  Prepend[\n   {{\"Before training\", \
+pct[pShoeBefore], fnum[lossBefore], \"-\"},\n    {\"Full fine-tune, 1 step\", \
+pct[pShoeFull], fnum[lossFull], \"12\"},\n    {\"LoRA, step 1\", \
+pct[pShoeLoRA1], fnum[lossLoRA1], \"2\"},\n    {\"LoRA, step 2\", \
+pct[pShoeLoRA2], fnum[lossLoRA2], \"up to 8\"}},\n   {\"Stage\", \"P(shoe)\", \
+\"Loss\", \"Numbers moved (cumulative)\"}],\n  Frame -> All, Alignment -> \
+Left, Spacings -> {2, 1}\n]"], "Input"], 
+  Cell["9. What This Does and Doesn't Prove", "Section"], 
+  Cell["A few honest limits on what this notebook demonstrates:", "Text"], 
+  Cell["The parameter saving (8 vs. 12 numbers) is not the point here and is \
+not dramatic at this scale. LoRA's real value shows up in models where W has \
+millions or billions of parameters and B, A together have a tiny fraction of \
+that -- there, the saving is the entire reason to use it.", "Item"], 
+  Cell["Rank 1 was chosen because it is the only rank small enough to \
+multiply out by hand, not because it is the \"correct\" or typical rank for a \
+real model. Real LoRA deployments commonly use ranks from 4 to 64, chosen by \
+experiment.", "Item"], Cell["A0 was fixed by hand rather than drawn at \
+random, to keep this notebook free of randomness like its companion. Real \
+implementations initialize A randomly (with B fixed at zero); the \
+zero-initialization of B, and the resulting \"A can't move until B does\" \
+behavior in Sections 5-6, is real and not an artifact of our specific choice \
+of A0.", "Item"], Cell["This notebook only applies LoRA to WOut. In practice, \
+LoRA is usually applied to the attention projection matrices (WQ, WK, WV, and \
+the output projection) rather than (or in addition to) a final classification \
+layer -- we picked WOut because it is the layer the main notebook already \
+trains, so the comparison is apples to apples.", "Item"], 
+  Cell["Two gradient steps were used deliberately, to expose the \"only B \
+moves at step 1\" fact. Real LoRA training runs many more steps than that; \
+nothing here should be read as a claim about how many steps LoRA needs in \
+general.", "Item"], Cell["10. Try It Without Mathematica", "Section"], 
+  Cell["Everything in Sections 4-8 can be done with a calculator, following \
+the shapes below. B is a column of 2 numbers, A is a row of 6 numbers, and \
+\[CapitalDelta]W = B.A is just every entry of B times every entry of A (an \
+outer product, the same operation used for dWOut in the main notebook):", 
+   "Text"], Cell["1. Start from Section 2's dWOut (G) and h; you already have \
+both if you worked through the main notebook's hand worksheet.\n2. dB = \
+G.Transpose[A0]: multiply G (2\[Times]6) by A0 written as a column \
+(6\[Times]1); this is two dot products, one per row of G, each with the 6 \
+numbers of A0.\n3. dA = Transpose[B].G: with B0 all zeros, this is zero \
+without any arithmetic -- skip it.\n4. B1 = B0 - 2*dB (learning rate 2), same \
+subtract-and-scale rule as every other update in this project.\n5. \
+\[CapitalDelta]W1 = B1.A0: multiply each of B1's 2 numbers by each of A0's 6 \
+numbers to fill in a 2\[Times]6 grid.\n6. WOutEffective1 = WOut + \
+\[CapitalDelta]W1, entry by entry; then logits, softmax, and P(shoe) exactly \
+as in the main worksheet.", "Text"], Cell["A full worked version of these \
+steps, with every intermediate number filled in, is in \
+calculations/LORA_HAND_CALCULATION.md alongside this notebook.", "Text"], 
+  Cell["Appendix A: Automated Verification", "Section"], 
+  Cell["This cell loads TinyTransformerByHand.wl and TinyLoRAByHand.wl (the \
+standalone reference implementations shipped alongside this notebook) and \
+runs RunLoRAChecks[], which checks every claim made above programmatically: \
+that \[CapitalDelta]W starts at zero, that dA is exactly zero at step 1 and \
+nonzero at step 2, that A is unchanged after step 1 and B is not, that both \
+full fine-tuning and LoRA's first step increase P(shoe) and decrease the loss \
+from the same starting point, and that LoRA's second step overtakes full \
+fine-tuning's single step on this example.", "Text"], 
+  Cell[BoxData["notebookDir = \
+Quiet[NotebookDirectory[]];\nIf[!StringQ[notebookDir], notebookDir = \
+Directory[]];\nSetDirectory[notebookDir];\nQuiet[Get[\"TinyTransformerByHand.\
+wl\"], {General::shdw}];\nQuiet[Get[\"TinyLoRAByHand.wl\"], \
+{General::shdw}];\nTinyLoRAByHand`RunLoRAChecks[];"], "Input"]}, 
+ WindowTitle -> "TinyLoRAByHand", StyleDefinitions -> "Default.nb"]
+
+(* End of Notebook Content *)

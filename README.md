@@ -80,6 +80,34 @@ the same story for social posts —
 [view it here](https://claude.ai/code/artifact/b2a63bf4-2ded-4087-90e1-4b0dbf627c8a) —
 built from these same verified numbers, not a separate retelling.
 
+## Companion project: Tiny LoRA, By Hand
+
+Same frozen model, a different question: instead of updating all 12
+entries of `W_Out` directly (full fine-tuning, what the main notebook
+does), freeze `W_Out` and train a rank-1 correction `ΔW = B·A` (2×1 times
+1×6, 8 numbers total) on top of it instead — the same idea real LoRA
+fine-tuning uses on much larger models, small enough here to compute by
+hand.
+
+| Stage | P("shoe") | Loss | Top prediction | Numbers moved |
+|---|---|---|---|---|
+| Before training | 20.1% | 1.6035 | run (wrong) | — |
+| Full fine-tune, 1 step | **43.2%** | **0.8404** | **shoe** (correct) | 12 (all of `W_Out`) |
+| LoRA, step 1 | 31.0% | 1.1714 | run (wrong) | 2 (just `B`) |
+| LoRA, step 2 (bonus) | **79.7%** | **0.2263** | **shoe** (correct) | up to 8 (`B` and `A`) |
+
+A genuine, checked LoRA fact falls out of this worked example for free:
+on step 1, `B` starts at zero (standard practice), so the gradient with
+respect to `A` is *exactly* zero — only `B` can move on the very first
+step. `A` only starts learning once `B` has moved. By step 2, LoRA has
+not just caught up to one step of full fine-tuning — it has overtaken it,
+while never touching more than 8 of `W_Out`'s effective parameters.
+
+21/21 automated checks pass — see `Mathematica/TinyLoRAByHand.wl`.
+Source: `Mathematica/TinyLoRAByHand.nb`,
+`Mathematica/TinyLoRAByHand.wl`,
+`calculations/LORA_HAND_CALCULATION.md`.
+
 ## Repository structure
 
 ```
@@ -88,11 +116,14 @@ tiny-transformer-by-hand/
     Mathematica/
         TinyTransformerByHand.nb  - the full worked notebook (16 sections + interactive + worksheet)
         TinyTransformerByHand.wl  - standalone reference implementation + RunAllChecks[] verification suite
+        TinyLoRAByHand.nb         - companion notebook: freeze W_Out, train a rank-1 correction instead
+        TinyLoRAByHand.wl         - LoRA reference implementation + RunLoRAChecks[] verification suite
     Web/
         index.html                - the interactive browser demo (self-contained, no build step)
         notebook.html             - the full notebook, statically rendered (no install, not interactive)
     calculations/
         HAND_CALCULATION.md       - paper-and-calculator worksheet with an answer key
+        LORA_HAND_CALCULATION.md  - paper-and-calculator worksheet for the LoRA companion, answer key included
     figures/
         README.md                 - the LinkedIn carousel: links, slide-by-slide contents, source files
         carousel/                 - the 8 slide sources (.dc.html), canvas layout, and the seeded canvas
@@ -173,6 +204,12 @@ Built and verified against **Wolfram Language 15.0.1**; it uses only
 long-stable language features (`MatrixForm`, `Grid`, `BarChart`,
 `Manipulate`), so it should run unmodified on **Mathematica / Wolfram
 Desktop 13.0 or later**.
+
+The LoRA companion notebook (`Mathematica/TinyLoRAByHand.nb`) works the
+same way: open it from the `Mathematica/` folder, evaluate top to bottom,
+and its own Appendix runs
+`wolframscript -code 'Get["TinyTransformerByHand.wl"]; Get["TinyLoRAByHand.wl"]; TinyLoRAByHand`RunLoRAChecks[]'`
+for the same kind of independent check (currently 21/21 passing).
 
 ## What you should understand after going through this
 

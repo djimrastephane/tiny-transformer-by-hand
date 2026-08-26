@@ -112,6 +112,41 @@ there's further to go. Verified via
 `TinyTransformerByHand.wl`, run automatically alongside the main
 27-check suite in the notebook's Appendix A.
 
+## Companion project: LoRA, and its own extra assumptions
+
+`Mathematica/TinyLoRAByHand.nb` and `TinyLoRAByHand.wl` reuse the frozen
+model above unchanged (same vocabulary, embeddings, `W_Q`, `W_K`, `W_V`,
+and starting `W_Out`) but replace full fine-tuning of `W_Out` with a
+rank-1 LoRA correction `ΔW = B·A`. That companion project makes its own
+extra simplifying choices, on top of everything above:
+
+| Choice | Value | Why |
+|---|---|---|
+| Rank | r = 1, so `B` is 2×1 and `A` is 1×6 | The only rank small enough to multiply out (an outer product) by hand. Real LoRA deployments commonly use ranks from 4 to 64, chosen by experiment — r=1 is not presented as a typical or "correct" choice, only as the smallest one. |
+| Where it's applied | `W_Out` only | Matches the layer the main notebook already trains by hand, so the full-fine-tune-vs-LoRA comparison is apples to apples. In practice, LoRA is more commonly applied to the attention projections (`W_Q`, `W_K`, `W_V`) rather than (or in addition to) a final output layer. |
+| Initialization | `B` fixed at the zero matrix; `A` fixed at a deterministic, hand-chosen pattern `(1,-1,1,-1,1,-1)` | Zero-initializing `B` (so `ΔW` starts as an exact no-op) matches standard real-world LoRA practice. Fixing `A` rather than drawing it at random keeps this project's "no randomness anywhere" property (see the fixed-architecture table above); this is a deliberate departure from typical practice (which initializes `A` randomly), made only so results are exactly reproducible by a reader. |
+| Number of steps | 2 (the second is explicitly a "bonus", not required to see the main point) | One step is enough to demonstrate the central, real LoRA fact — that `A`'s gradient is exactly zero while `B` is exactly zero, so only `B` can move first. A second step is included only to show `A` starting to learn once `B` is nonzero, and to give an honest picture of how the two approaches continue to compare; it should not be read as a claim about how many steps LoRA needs in general. |
+| Parameter-count comparison | 8 numbers (LoRA) vs. 12 (full fine-tune) | At this toy scale the saving is modest and is not the point being demonstrated. LoRA's real-world value comes from applying the same `r*(m+n) << m*n` idea to matrices with millions or billions of entries, where the saving is the entire reason to use it — not from this 2×6 example. |
+
+Because `h` (the attention output used for prediction) depends only on
+the embeddings, `W_Q`, `W_K`, and `W_V` — never on `W_Out` or its LoRA
+correction — `h` is identical across every stage compared in this
+companion project (before training, after full fine-tuning, and after
+each LoRA step). Only the final projection step changes.
+
+One further honest result worth calling out: after LoRA's first step,
+the model's top prediction is **still wrong** ("run" ahead of "shoe",
+43.1% vs. 31.0%) even though `P("shoe")` has genuinely improved — full
+fine-tuning's single step already flips the top prediction correctly.
+LoRA only flips to the correct top prediction after its second step,
+at which point it overtakes full fine-tuning on every metric measured
+(`P("shoe")`, loss, and top-prediction correctness). This is not
+cherry-picked: both the "still wrong after step 1" and the "flips and
+overtakes after step 2" claims are checked programmatically — see
+`` TinyLoRAByHand`RunLoRAChecks[] `` in `TinyLoRAByHand.wl` (21/21
+checks passing), run automatically in the companion notebook's
+Appendix A.
+
 ## Numerical verification, not just narrative
 
 Every claim in this project is checked programmatically before being
