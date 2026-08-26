@@ -3,6 +3,7 @@
 [![Pages deploy status](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/pages.yml/badge.svg)](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/pages.yml)
 [![Live demo](https://img.shields.io/badge/demo-live-45C7B8)](https://djimrastephane.github.io/tiny-transformer-by-hand/)
 [![Mathematica checks](https://img.shields.io/badge/Mathematica_checks-34%2F34_passing-E8A33D)](Mathematica/TinyTransformerByHand.wl)
+[![LoRA checks](https://img.shields.io/badge/LoRA_checks-21%2F21_passing-E8A33D)](Mathematica/TinyLoRAByHand.wl)
 [![No LLM required](https://img.shields.io/badge/requires-a_calculator-8592AC)](calculations/HAND_CALCULATION.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
