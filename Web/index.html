@@ -406,6 +406,12 @@
   .paper-nav button:disabled{ opacity:0.35; cursor:default; }
   .paper-nav button.reveal{ background:transparent; color:var(--paper-ink); border:1px solid var(--paper-ink); }
 
+  .watch-progress{ height:4px; background:rgba(0,0,0,0.1); border-radius:2px; overflow:hidden; margin-bottom:16px; }
+  .watch-progress-fill{ height:100%; width:0%; background:var(--paper-ink); opacity:0.6; transition:width 0.4s linear; }
+  .watch-note{ font-family:"IBM Plex Mono", monospace; font-size:0.78rem; opacity:0.65; }
+  #watchAnswer{ transition:opacity 0.5s ease; opacity:0; }
+  #watchAnswer.shown{ opacity:1; visibility:visible !important; }
+
   footer{
     border-top:1px solid var(--line); padding-top:20px; margin-top:50px;
     color:var(--text-faint); font-size:0.8rem;
@@ -430,10 +436,11 @@
 
   <section>
     <div class="switch mode-switch" id="modeSwitch">
-      <button data-m="change" class="on">Change it</button>
+      <button data-m="watch" class="on">Watch it</button>
+      <button data-m="change">Change it</button>
       <button data-m="calculate">Calculate it</button>
     </div>
-    <p class="mode-hint" id="modeHint">Drag the sliders below and watch every number update live.</p>
+    <p class="mode-hint" id="modeHint">Sit back — the whole forward pass and training step play out automatically, using the sliders below.</p>
   </section>
 
   <section>
@@ -459,7 +466,27 @@
     </div>
   </section>
 
-  <div id="changeItView">
+  <div id="watchItView">
+    <section>
+      <div class="paper-sheet" style="width:100%; max-width:none;">
+        <div class="paper-inner">
+          <div class="paper-step-label" id="watchStepLabel">Step 1 of 9</div>
+          <div class="watch-progress"><div class="watch-progress-fill" id="watchProgressFill"></div></div>
+          <h2 id="watchTitle"></h2>
+          <div class="paper-given" id="watchGiven"></div>
+          <div class="paper-prompt" id="watchPrompt"></div>
+          <div class="paper-answer" id="watchAnswer" style="visibility:hidden;"></div>
+          <div class="paper-nav">
+            <button id="watchRestart">&#8635; Restart</button>
+            <button class="reveal" id="watchPlayPause">Pause</button>
+            <span class="watch-note" id="watchDoneNote"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="changeItView" style="display:none;">
 
   <section>
     <div class="section-label"><span class="tick"></span>Live readout</div>
@@ -681,7 +708,7 @@
   function pct(x){ return (x*100).toFixed(1)+"%"; }
 
   /* ---------------- state ---------------- */
-  var state = { lr:2, emb:1, steps:0, mode:"change" };
+  var state = { lr:2, emb:1, steps:0, mode:"watch" };
   var lastBase = null, lastGrad = null;
   var calcIdx = 0;
 
@@ -707,24 +734,49 @@
   setSliderPct(lrSlider); setSliderPct(embSlider);
 
   var modeSwitch = document.getElementById("modeSwitch");
+  var watchItView = document.getElementById("watchItView");
   var changeItView = document.getElementById("changeItView");
   var calculateItView = document.getElementById("calculateItView");
   var modeHint = document.getElementById("modeHint");
+
+  var MODE_HINTS = {
+    watch: "Sit back — the whole forward pass and training step play out automatically, using the sliders below.",
+    change: "Drag the sliders below and watch every number update live.",
+    calculate: "Work out Q, K, V, attention, softmax, the loss, and the gradient yourself, one step at a time."
+  };
+
+  function setMode(m){
+    state.mode = m;
+    Array.prototype.forEach.call(modeSwitch.querySelectorAll("button"), function(b){ b.classList.toggle("on", b.getAttribute("data-m")===m); });
+    watchItView.style.display = (m==="watch") ? "block" : "none";
+    changeItView.style.display = (m==="change") ? "block" : "none";
+    calculateItView.style.display = (m==="calculate") ? "block" : "none";
+    modeHint.textContent = MODE_HINTS[m];
+    if(m==="watch"){ startWatch(true); } else { clearWatchTimer(); }
+    if(m==="calculate"){ calcIdx = 0; renderCalc(); }
+  }
+
   modeSwitch.addEventListener("click", function(e){
     var btn = e.target.closest("button"); if(!btn) return;
-    state.mode = btn.getAttribute("data-m");
-    Array.prototype.forEach.call(modeSwitch.querySelectorAll("button"), function(b){ b.classList.toggle("on", b===btn); });
-    if(state.mode==="calculate"){
-      changeItView.style.display = "none";
-      calculateItView.style.display = "block";
-      modeHint.textContent = "Work out Q, K, V, attention, softmax, the loss, and the gradient yourself, one step at a time.";
-      calcIdx = 0; renderCalc();
-    } else {
-      changeItView.style.display = "block";
-      calculateItView.style.display = "none";
-      modeHint.textContent = "Drag the sliders below and watch every number update live.";
-    }
+    setMode(btn.getAttribute("data-m"));
   });
+
+  /* DOM lookups for Watch It needed before the first render() call below;
+     the timer logic itself (scheduleWatch/startWatch) is defined further
+     down, near Calculate It, but function declarations are hoisted so
+     that's safe -- these element references are what actually need to
+     exist early. */
+  var watchStepLabel = document.getElementById("watchStepLabel");
+  var watchProgressFill = document.getElementById("watchProgressFill");
+  var watchTitle = document.getElementById("watchTitle");
+  var watchGiven = document.getElementById("watchGiven");
+  var watchPrompt = document.getElementById("watchPrompt");
+  var watchAnswer = document.getElementById("watchAnswer");
+  var watchPlayPause = document.getElementById("watchPlayPause");
+  var watchRestart = document.getElementById("watchRestart");
+  var watchDoneNote = document.getElementById("watchDoneNote");
+  var watchIdx = 0, watchPlaying = true, watchPhase = "given", watchTimer = null;
+  var WATCH_REVEAL_DELAY = 1800, WATCH_ADVANCE_DELAY = 2400;
 
   /* ---------------- rendering ---------------- */
   var attnGrid = document.getElementById("attnGrid");
@@ -833,6 +885,7 @@
     var after = forwardPass(state.emb, grad.wOutNew);
     lastBase = base; lastGrad = grad;
     if(state.mode==="calculate" && typeof renderCalc==="function"){ calcIdx = 0; renderCalc(); }
+    if(state.mode==="watch" && typeof startWatch==="function"){ startWatch(true); }
 
     var pBefore = base.probs[TARGET_IDX], lossBefore = -Math.log(pBefore);
     var pAfter = state.steps===1 ? after.probs[TARGET_IDX] : pBefore;
@@ -1034,6 +1087,68 @@
   });
   calcPrev.addEventListener("click", function(){ if(calcIdx>0){ calcIdx--; renderCalc(); } });
   calcNext.addEventListener("click", function(){ if(calcIdx<8){ calcIdx++; renderCalc(); } });
+
+  /* ---------------- watch it: same 9 steps, auto-playing, live slider state ---------------- */
+  function clearWatchTimer(){ if(watchTimer){ clearTimeout(watchTimer); watchTimer = null; } }
+
+  function renderWatchStepContent(){
+    if(!lastBase || !lastGrad) return;
+    var liveSteps = buildSteps(lastBase, lastGrad, state.lr);
+    var s = liveSteps[watchIdx];
+    watchStepLabel.textContent = "Step "+(watchIdx+1)+" of "+liveSteps.length+" — embedding "+state.emb.toFixed(1)+", learning rate "+state.lr.toFixed(1);
+    watchTitle.textContent = s.title;
+    watchGiven.innerHTML = "<div class='row'>"+s.given+"</div>";
+    watchPrompt.innerHTML = s.prompt;
+    watchAnswer.innerHTML = s.answer;
+    watchAnswer.classList.remove("shown");
+    watchProgressFill.style.width = (watchIdx/liveSteps.length*100)+"%";
+    watchDoneNote.textContent = "";
+  }
+
+  function scheduleWatch(){
+    clearWatchTimer();
+    if(!watchPlaying || !lastBase) return;
+    if(watchPhase==="given"){
+      watchTimer = setTimeout(function(){
+        watchAnswer.classList.add("shown");
+        var liveSteps = buildSteps(lastBase, lastGrad, state.lr);
+        watchProgressFill.style.width = ((watchIdx+1)/liveSteps.length*100)+"%";
+        watchPhase = "revealed";
+        scheduleWatch();
+      }, WATCH_REVEAL_DELAY);
+    } else {
+      watchTimer = setTimeout(function(){
+        var liveSteps = buildSteps(lastBase, lastGrad, state.lr);
+        if(watchIdx < liveSteps.length-1){
+          watchIdx++;
+          watchPhase = "given";
+          renderWatchStepContent();
+          scheduleWatch();
+        } else {
+          watchDoneNote.textContent = "Done — try “Change it” or “Calculate it” next, or restart.";
+          watchPlaying = false;
+          watchPlayPause.textContent = "Play";
+        }
+      }, WATCH_ADVANCE_DELAY);
+    }
+  }
+
+  function startWatch(resetToStart){
+    clearWatchTimer();
+    if(resetToStart!==false){
+      watchIdx = 0; watchPhase = "given"; watchPlaying = true;
+      watchPlayPause.textContent = "Pause";
+    }
+    renderWatchStepContent();
+    scheduleWatch();
+  }
+
+  watchPlayPause.addEventListener("click", function(){
+    watchPlaying = !watchPlaying;
+    watchPlayPause.textContent = watchPlaying ? "Pause" : "Play";
+    if(watchPlaying){ scheduleWatch(); } else { clearWatchTimer(); }
+  });
+  watchRestart.addEventListener("click", function(){ startWatch(true); });
 
 })();
 </script>
