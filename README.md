@@ -1,5 +1,10 @@
 # Tiny Transformer, By Hand
 
+[![Pages deploy status](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/pages.yml/badge.svg)](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/pages.yml)
+[![Live demo](https://img.shields.io/badge/demo-live-45C7B8)](https://djimrastephane.github.io/tiny-transformer-by-hand/)
+[![Mathematica checks](https://img.shields.io/badge/Mathematica_checks-34%2F34_passing-E8A33D)](Mathematica/TinyTransformerByHand.wl)
+[![No LLM required](https://img.shields.io/badge/requires-a_calculator-8592AC)](calculations/HAND_CALCULATION.md)
+
 **Can we build a transformer language model small enough that a human can
 reproduce its important calculations by hand? Yes.** This project is that
 model — a 6-word vocabulary, 2-token sequences, embedding dimension 2, one
