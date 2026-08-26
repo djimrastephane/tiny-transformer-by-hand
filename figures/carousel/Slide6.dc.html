@@ -49,6 +49,11 @@
     .metric .v{ font-family:"IBM Plex Mono", monospace; font-size:38px; color:#E7ECF5; }
     .compare .after .v{ color:#5FD08A; }
     .compare .before .v.wrong{ color:#E2604F; }
+    .metric.top .k{ font-weight:600; color:#E7ECF5; font-size:26px; }
+    .metric.top .v{ font-weight:600; }
+    .compare .before .metric.top .k, .compare .before .metric.top .v{ color:#E2604F; }
+    .compare .after .metric.top .k, .compare .after .metric.top .v{ color:#5FD08A; }
+    .metric.runner-up .k, .metric.runner-up .v{ font-size:24px; color:#8592AC; }
 
     .arrowband{
       grid-column:1/-1; background:#182238; padding:18px 32px;
@@ -74,15 +79,15 @@
   <div class="compare">
     <div class="before">
       <div class="cap">Before training</div>
-      <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v mono">20.1%</span></div>
+      <div class="metric top"><span class="k">run</span><span class="v mono">28.0%</span></div>
+      <div class="metric runner-up"><span class="k">shoe (target)</span><span class="v mono">20.1%</span></div>
       <div class="metric"><span class="k">Loss</span><span class="v mono">1.6035</span></div>
-      <div class="metric"><span class="k">Top guess</span><span class="v mono wrong">RUN</span></div>
     </div>
     <div class="after">
       <div class="cap">After 1 update</div>
-      <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v mono">43.2%</span></div>
+      <div class="metric top"><span class="k">shoe</span><span class="v mono">43.2%</span></div>
+      <div class="metric runner-up"><span class="k">run</span><span class="v mono">18.0%</span></div>
       <div class="metric"><span class="k">Loss</span><span class="v mono">0.8404</span></div>
-      <div class="metric"><span class="k">Top guess</span><span class="v mono">SHOE</span></div>
     </div>
     <div class="arrowband">P(shoe) &nbsp;+23.1 pts&nbsp; &middot; &nbsp;Loss &minus;0.7631&nbsp; &middot; &nbsp;one gradient-descent step</div>
   </div>

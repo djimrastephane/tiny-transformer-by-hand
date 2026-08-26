@@ -6,6 +6,12 @@
 [![No LLM required](https://img.shields.io/badge/requires-a_calculator-8592AC)](calculations/HAND_CALCULATION.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+*An intentionally reduced causal self-attention language model for
+tracing the mathematics of next-token training — not a complete
+transformer block. See ["What's simplified, and why it's acceptable
+here"](#whats-simplified-and-why-its-acceptable-here) below for the
+precise scope.*
+
 **Can we build a transformer language model small enough that a human can
 reproduce its important calculations by hand? Yes.** This project is that
 model — a 6-word vocabulary, 2-token sequences, embedding dimension 2, one
@@ -27,13 +33,16 @@ GitHub Pages by `.github/workflows/pages.yml` on every push — see
 ## The result, up front
 
 Given the input **"run casing"**, the model should predict **"shoe"** (as
-in a casing shoe). Before any training, it doesn't:
+in a casing shoe). Before any training, it doesn't — "run" outranks it:
 
-| | Before training | After 1 gradient-descent update |
-|---|---|---|
-| P("shoe") | 20.1% | **43.2%** |
-| Loss (−ln P) | 1.6035 | **0.8404** |
-| Model's top guess | "run" (wrong) | **"shoe" (correct)** |
+| Before training | | After 1 gradient-descent update | |
+|---|---|---|---|
+| run | 28.0% | **shoe** | **43.2%** |
+| shoe | 20.1% | run | 18.0% |
+| Loss | 1.6035 | Loss | **0.8404** |
+
+The ranking flips after a single update: "shoe" overtakes "run" for the
+top spot, and does so decisively (a ~25-point margin).
 
 One hand-computable update — computed here with a fixed learning rate of
 2, updating only the output projection `W_Out` — is enough to flip this
@@ -101,13 +110,15 @@ tiny-transformer-by-hand/
 | Attention heads | 1 | dozens, run in parallel |
 | Transformer blocks | 1 | dozens to 100+, stacked |
 | Parameters | tens | billions, sometimes hundreds of billions |
-| Training examples used | 1 | trillions of tokens |
+| Training corpus | 1 next-token example | up to trillions of training tokens |
 | Training updates shown | 1, worked by hand | millions to billions |
 | Randomness | none — every value is a fixed, deterministic constant | random initialization, stochastic training |
 
-The arithmetic did not become magic in the right-hand column — the scale
-became enormous, and several architectural pieces were added back in (see
-below) that this toy model omits for clarity.
+The underlying operations in the right-hand column remain ordinary
+numerical operations. Production models combine them at vastly greater
+scale, with additional architectural, training, and systems complexity
+— several of those pieces are listed below, and this toy model omits
+them for clarity.
 
 ### What's simplified, and why it's acceptable here
 

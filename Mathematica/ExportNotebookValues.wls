@@ -40,6 +40,8 @@ data = <|
   "rawScores" -> before["RawScores"],
   "scaledScores" -> N[before["ScaledScores"]],
   "maskedScores" -> (N[before["MaskedScores"]] /. -Infinity -> "-Infinity"),
+  "row2Exps" -> N[Exp[before["MaskedScores"][[2]]]],
+  "row2SumExps" -> N[Total[Exp[before["MaskedScores"][[2]]]]],
   "attentionWeights" -> N[before["AttentionWeights"]],
   "attentionOutput" -> N[before["AttentionOutput"]],
   "h" -> N[before["h"]],

@@ -174,6 +174,17 @@ html = f"""<title>Tiny Transformer Notebook</title>
     border-radius:6px; padding:14px 16px; margin:14px 0; }}
   .note b{{ color:var(--text); }}
 
+  .disclose{{ background:var(--panel); border:1px solid var(--line); border-radius:6px; overflow:hidden; }}
+  .disclose > summary{{
+    list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; font-family:"IBM Plex Sans Condensed",sans-serif; text-transform:uppercase;
+    letter-spacing:0.04em; font-weight:600; font-size:0.85rem; color:var(--text);
+  }}
+  .disclose > summary::-webkit-details-marker{{ display:none; }}
+  .disclose > summary .chev{{ color:var(--teal); transition:transform 0.2s ease; }}
+  .disclose[open] > summary .chev{{ transform:rotate(90deg); }}
+  .disclose-body{{ padding:0 18px 18px; border-top:1px solid var(--line-soft); }}
+
   .compare{{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line);
     border-radius:8px; overflow:hidden; margin:16px 0; }}
   .compare > div{{ background:var(--panel); padding:18px; }}
@@ -229,6 +240,7 @@ html = f"""<title>Tiny Transformer Notebook</title>
     <p>Modern language models contain billions of parameters and perform trillions of arithmetic operations per response. Nobody reproduces that by hand, and nobody needs to &mdash; but the arithmetic itself is not exotic. It is addition, multiplication, exponentials, and logarithms, arranged in a particular pattern called a transformer.</p>
     <p>This notebook shrinks that pattern down until every number fits on a sheet of paper: a vocabulary of 6 words, sequences of 2 tokens, an embedding dimension of 2, tens of parameters total. Every matrix multiplication, every softmax, every gradient below can be checked with a calculator.</p>
     <p>The example is a drilling/completions phrase: given the two-word input <b>&ldquo;run casing&rdquo;</b>, the model should predict that the next word is <b>&ldquo;shoe&rdquo;</b> (as in a casing shoe). This is a toy transformer <b>language model</b> &mdash; not an LLM, and not any kind of reproduction of ChatGPT or similar production systems.</p>
+    <p>Stated with full technical scope: this is an intentionally reduced causal self-attention language model for tracing the mathematics of next-token training &mdash; not a complete transformer block. Its main forward path has no feed-forward network, no residual connections, no LayerNorm, and no positional encoding; the next section explains why each omission is fine at this scale.</p>
   </section>
 
   <section>
@@ -291,9 +303,13 @@ html = f"""<title>Tiny Transformer Notebook</title>
   <section>
     <div class="sec-label">Section 7</div>
     <h2 class="sec-title">Softmax</h2>
-    <p>Softmax[z<sub>i</sub>] = Exp[z<sub>i</sub>] / Sum[Exp[z<sub>j</sub>]]. Every score is exponentiated, then divided by the row's total, so each row becomes a valid probability distribution:</p>
+    <p>Softmax[z<sub>i</sub>] = Exp[z<sub>i</sub>] / Sum[Exp[z<sub>j</sub>]]. Every score is exponentiated, then divided by the row's total, so each row becomes a valid probability distribution. Here it is worked by hand for row 2 (the &ldquo;casing&rdquo; row, the one with two real numbers to compare) &mdash; exactly the kind of calculation you could type into a phone calculator:</p>
+    <div class="flow">{matbox("row 2 scores", D['maskedScores'][1])}<span class="op">Exp &rarr;</span>{matbox("exp", D['row2Exps'])}</div>
+    <p>Sum of exponentials: <span class="mono">{fnum(D['row2Exps'][0])} + {fnum(D['row2Exps'][1])} = {fnum(D['row2SumExps'])}</span>. Divide each exponential by that sum:</p>
+    <div class="flow">{matbox("row 2 probabilities", [D['row2Exps'][0]/D['row2SumExps'], D['row2Exps'][1]/D['row2SumExps']])}</div>
+    <p>Now the same formula, row by row, for the whole matrix:</p>
     <div class="flow">{matbox("attention weights", D['attentionWeights'])}</div>
-    <p>Row 1 is (1, 0): position 1 puts all its attention on itself, since the mask left it no choice. Row 2 is about (0.670, 0.330): position 2 splits its attention mostly onto position 1, with some weight on itself. Both rows sum to 1.</p>
+    <p>Row 1 is (1, 0): position 1 puts all its attention on itself, since the mask left it no choice. Row 2 matches the hand calculation above: about (0.670, 0.330) &mdash; position 2 splits its attention mostly onto position 1, with some weight on itself. Both rows sum to 1.</p>
   </section>
 
   <section>
@@ -348,6 +364,7 @@ html = f"""<title>Tiny Transformer Notebook</title>
       <b>Checked numerically, not just asserted.</b> Nudging W<sub>Out</sub>[[1,4]] by &epsilon;=10<sup>-6</sup> and recomputing the loss gives a finite-difference slope of <span class="mono">{fnum(D['numericSlope'],6)}</span>, matching the analytic gradient's <span class="mono">{fnum(D['analyticSlope'],6)}</span> to about 6 significant figures.
     </div>
     <p>This training step computes and applies a gradient for <b>W<sub>Out</sub> only</b>. W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, and the embeddings are left unchanged &mdash; a deliberate scope limit, since propagating further requires the softmax attention Jacobian, not a simple subtraction. See the notebook's Section 12 for the further chain-rule sketch.</p>
+    <div class="note">Put plainly: in this worked update, the model learns only at the output projection. The attention mechanism participates fully in the forward pass &mdash; it produced the h this update trains on &mdash; but its parameters (W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, the embeddings) are frozen for this step. This lets us demonstrate real gradient-based learning without introducing the much larger attention-softmax Jacobian.</div>
   </section>
 
   <section>
@@ -355,6 +372,7 @@ html = f"""<title>Tiny Transformer Notebook</title>
     <h2 class="sec-title">Gradient Descent Update</h2>
     <p>W<sub>new</sub> = W<sub>old</sub> &minus; learningRate &times; gradient, with learning rate {D['learningRate']}:</p>
     <div class="flow">{matbox("W_Out (new)", D['WOutNew'])}</div>
+    <p style="font-size:0.85rem;">A deliberately large learning rate of {D['learningRate']} is used so the effect of a single update is visually obvious in one step &mdash; not a recommended learning rate for training real neural networks, which use many small steps rather than one large one.</p>
     <p>The change (new &minus; old) is not uniform &mdash; column 4 (&ldquo;shoe&rdquo;) moved the most, in the direction that increases its logit:</p>
     <div class="flow">{matbox("&Delta; W_Out", D['WOutDelta'], highlight=[3,9])}</div>
   </section>
@@ -389,7 +407,7 @@ html = f"""<title>Tiny Transformer Notebook</title>
       <li>Gradient descent moved every weight a small step opposite its gradient.</li>
       <li>Running the identical input again through the updated weights produced a better distribution: higher P(&ldquo;shoe&rdquo;), lower loss.</li>
     </ul>
-    <p>That loop &mdash; predict, measure error, compute gradient, update weights, predict again &mdash; is the numerical core of how transformer language models learn. Real training repeats it millions or billions of times, over enormous datasets, updating every parameter (not just an output projection). This notebook doesn't claim one hand-worked update captures everything about training a real model &mdash; only that the arithmetic at the heart of it is exactly this.</p>
+    <p>That loop &mdash; predict, measure error, compute gradient, update weights, predict again &mdash; is the numerical core of how transformer language models learn. Real pretraining repeats this basic learning cycle over enormous datasets and very large parameter sets, while different training methods may update all or only selected parameters (this notebook's own update, on just W<sub>Out</sub>, is itself an example of the latter). This notebook doesn't claim one hand-worked update captures everything about training a real model &mdash; only that the arithmetic at the heart of it is exactly this.</p>
   </section>
 
   <section>
@@ -401,29 +419,33 @@ html = f"""<title>Tiny Transformer Notebook</title>
         ["Attention heads", "1", "dozens, run in parallel per layer"],
         ["Transformer blocks", "1", "dozens to over 100, stacked"],
         ["Parameters", "tens", "billions, sometimes hundreds of billions"],
-        ["Training examples", "1", "trillions of tokens"],
+        ["Training corpus", "1 next-token example", "up to trillions of training tokens"],
         ["Training updates", "1 (shown by hand)", "millions to billions"],
     ], ["", "Toy model (this notebook)", "A modern pretrained language model"])}
-    <p>The arithmetic did not suddenly become magic. The scale became enormous, and (per the omissions above) combined with additional architectural components this toy model omits: LayerNorm, residual connections, multi-head attention, larger feed-forward networks, positional encodings, and more.</p>
+    <p>The underlying operations remain ordinary numerical operations. Production models combine them at vastly greater scale, with additional architectural, training, and systems complexity: (per the omissions above) LayerNorm, residual connections, multi-head attention, larger feed-forward networks, positional encodings, and more.</p>
   </section>
 
   <section>
-    <div class="sec-label">Bonus</div>
-    <h2 class="sec-title">Does This Generalize? Training Toward a Different Target</h2>
-    <p>Sections 2&ndash;8 never look at the target token &mdash; X, Q, K, V, attention, and h depend only on the input. So does the exact same mechanism work retargeted at <b>&ldquo;cement&rdquo;</b> instead of &ldquo;shoe&rdquo; (cementing a casing string is an equally real next step)? h is unchanged; only the loss, gradient, and update differ.</p>
-    <div class="compare">
-      <div class="before"><div class="cap">Before training</div>
-        <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v mono">{fnum(D['pCementBefore'])}</span></div>
-        <div class="metric"><span class="k">Loss</span><span class="v mono">{fnum(D['lossCementBefore'])}</span></div>
-        <div class="metric"><span class="k">Predicted</span><span class="v mono">{D['predictedCementBefore']}</span></div>
+    <p style="font-size:0.85rem; color:var(--text-faint);">The main story is complete as of Section 16 above. What follows is supplementary evidence, not the headline result.</p>
+    <details class="disclose">
+      <summary>Bonus: does this generalize? (training toward a different target) <span class="chev">&#9656;</span></summary>
+      <div class="disclose-body">
+        <p>Sections 2&ndash;8 never look at the target token &mdash; X, Q, K, V, attention, and h depend only on the input. So does the exact same mechanism work retargeted at <b>&ldquo;cement&rdquo;</b> instead of &ldquo;shoe&rdquo; (cementing a casing string is an equally real next step)? h is unchanged; only the loss, gradient, and update differ.</p>
+        <div class="compare">
+          <div class="before"><div class="cap">Before training</div>
+            <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v mono">{fnum(D['pCementBefore'])}</span></div>
+            <div class="metric"><span class="k">Loss</span><span class="v mono">{fnum(D['lossCementBefore'])}</span></div>
+            <div class="metric"><span class="k">Predicted</span><span class="v mono">{D['predictedCementBefore']}</span></div>
+          </div>
+          <div class="after"><div class="cap">After 1 update</div>
+            <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v mono">{fnum(D['pCementAfter'])}</span></div>
+            <div class="metric"><span class="k">Loss</span><span class="v mono">{fnum(D['lossCementAfter'])}</span></div>
+            <div class="metric"><span class="k">Predicted</span><span class="v mono">{D['predictedCementAfter']}</span></div>
+          </div>
+        </div>
+        <p>&ldquo;cement&rdquo; starts as the single lowest-probability token of all 6 ({pct(D['pCementBefore'])}) &mdash; a much worse starting guess than &ldquo;shoe&rdquo; had ({pct(D['pShoeBefore'])}). The same mechanism, same learning rate, still raises P(&ldquo;cement&rdquo;) to {pct(D['pCementAfter'])} and lowers the loss to {fnum(D['lossCementAfter'])} &mdash; but &ldquo;cement&rdquo; only barely overtakes &ldquo;run&rdquo; for the top spot ({pct(D['probabilitiesCementAfter'][4])} vs. {pct(D['probabilitiesCementAfter'][1])}, a margin of about {(D['probabilitiesCementAfter'][4]-D['probabilitiesCementAfter'][1])*100:.2f} points), nowhere near shoe's decisive win. <b>Generalizing correctly does not mean generalizing identically</b> &mdash; the same size of step covers proportionally less ground when there's further to go.</p>
       </div>
-      <div class="after"><div class="cap">After 1 update</div>
-        <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v mono">{fnum(D['pCementAfter'])}</span></div>
-        <div class="metric"><span class="k">Loss</span><span class="v mono">{fnum(D['lossCementAfter'])}</span></div>
-        <div class="metric"><span class="k">Predicted</span><span class="v mono">{D['predictedCementAfter']}</span></div>
-      </div>
-    </div>
-    <p>&ldquo;cement&rdquo; starts as the single lowest-probability token of all 6 ({pct(D['pCementBefore'])}) &mdash; a much worse starting guess than &ldquo;shoe&rdquo; had ({pct(D['pShoeBefore'])}). The same mechanism, same learning rate, still raises P(&ldquo;cement&rdquo;) to {pct(D['pCementAfter'])} and lowers the loss to {fnum(D['lossCementAfter'])} &mdash; but &ldquo;cement&rdquo; only barely overtakes &ldquo;run&rdquo; for the top spot ({pct(D['probabilitiesCementAfter'][4])} vs. {pct(D['probabilitiesCementAfter'][1])}, a margin of about {(D['probabilitiesCementAfter'][4]-D['probabilitiesCementAfter'][1])*100:.2f} points), nowhere near shoe's decisive win. <b>Generalizing correctly does not mean generalizing identically</b> &mdash; the same size of step covers proportionally less ground when there's further to go.</p>
+    </details>
   </section>
 
   <section>

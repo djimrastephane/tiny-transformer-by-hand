@@ -41,7 +41,12 @@ something that assigns probabilities to \"what word comes next\". It is not \
 an LLM (a large language model with billions of parameters trained on \
 enormous text corpora), and it is not ChatGPT, Claude, or any production \
 system. Treat every number in this notebook as belonging to a teaching-sized \
-toy, not a scaled-down copy of a real product.", "Text"], 
+toy, not a scaled-down copy of a real product.\n\nMore precisely, stated with \
+full technical scope: this is an intentionally reduced causal self-attention \
+language model for tracing the mathematics of next-token training \[LongDash] \
+not a complete transformer block. Its main forward path has no feed-forward \
+network, no residual connections, no LayerNorm, and no positional encoding; \
+the next section explains why each omission is fine at this scale.", "Text"], 
   Cell["What we left out, and why that is fine here", "Subsection"], 
   Cell["LayerNorm \[LongDash] real transformers rescale activations between \
 steps to keep training stable across many layers. With one block and tens of \
@@ -395,7 +400,13 @@ attention softmax itself, whose Jacobian is more involved than the \
 softmax-cross-entropy shortcut used above. Rather than gloss over that \
 complexity, we stop the hand-worked gradient at the output layer, where every \
 number above can still be checked with a calculator, and leave further \
-backpropagation as an optional, clearly marked extension below.", "Text"], 
+backpropagation as an optional, clearly marked extension below.\n\nPut \
+plainly: in this worked update, the model learns only at the output \
+projection. The attention mechanism participates fully in the forward pass \
+\[LongDash] it produced the h this update trains on \[LongDash] but its \
+parameters (WQ, WK, WV, the embeddings) are frozen for this step. This lets \
+us demonstrate real gradient-based learning without introducing the much \
+larger attention-softmax Jacobian.", "Text"], 
   Cell["Optional / advanced: continuing backpropagation through attention", 
    "Subsubsection"], Cell["For a reader who wants to go further: the same \
 chain rule keeps applying. dL/dh = dLogits . Transpose[WOut] tells you how \
@@ -414,10 +425,12 @@ exploration, not as a claim that we've hand-derived it in this notebook.",
    "Text"], Cell["13. Gradient Descent Update", "Section"], 
   Cell["Gradient descent nudges every weight a small step in the direction \
 that reduces the loss \[LongDash] opposite the gradient, since the gradient \
-points toward increasing loss. With a learning rate of 2 (a plain, simple \
-number chosen so the effect of one step is easy to see):\n\nW_new = W_old - \
-learningRate \[Times] gradient", "Text"], 
-  Cell[BoxData["learningRate = 2;\nWOutNew = WOut - \
+points toward increasing loss. With a learning rate of 2:\n\nW_new = W_old - \
+learningRate \[Times] gradient\n\nA deliberately large learning rate of 2 is \
+used so that the effect of a single gradient update is visually obvious in \
+one step. It should not be read as a recommended learning rate for training \
+real neural networks \[LongDash] real training uses many small steps, not one \
+large one.", "Text"], Cell[BoxData["learningRate = 2;\nWOutNew = WOut - \
 learningRate*dWOut;\nMatrixForm[N[WOutNew, 4]]"], "Input"], 
   Cell["Every entry changed, since dWOut had no exact zeros, but the changes \
 are not uniform. Column 4 (\"shoe\") moved the most, and in the direction \
@@ -462,34 +475,37 @@ casing\", through the updated weights produced a different, better \
 distribution: higher P(\"shoe\"), lower loss (Section 14).", "Item"], 
   Cell["That loop \[LongDash] predict, measure error, compute gradient, \
 update weights, predict again \[LongDash] is the numerical core of how \
-transformer language models learn. Real training repeats it millions or \
-billions of times, over enormous datasets, updating every parameter in the \
-network (not just an output projection), with additional machinery (Section \
-16) layered on top. This notebook does not claim that a single hand-worked \
-update on one example captures everything about training a real model \
-\[LongDash] only that the arithmetic at the heart of it is exactly this.", 
-   "Text"], Cell["16. Scale Comparison", "Section"], 
+transformer language models learn. Real pretraining repeats this basic \
+learning cycle over enormous datasets and very large parameter sets, while \
+different training methods may update all or only selected parameters (this \
+notebook's own update, on just WOut, is itself an example of the latter). \
+This notebook does not claim that a single hand-worked update on one example \
+captures everything about training a real model \[LongDash] only that the \
+arithmetic at the heart of it is exactly this.", "Text"], 
+  Cell["16. Scale Comparison", "Section"], 
   Cell[BoxData["Grid[{\n   {\"\", \"Toy model (this notebook)\", \"A modern \
 pretrained language model\"},\n   {\"Vocabulary size\", \"~6 tokens\", \"tens \
 of thousands to ~1,000,000+ tokens\"},\n   {\"Embedding dimension\", \"2\", \
 \"hundreds to tens of thousands\"},\n   {\"Attention heads\", \"1\", \
 \"dozens, run in parallel per layer\"},\n   {\"Transformer blocks\", \"1\", \
 \"dozens to over 100, stacked\"},\n   {\"Parameters\", \"tens\", \"billions, \
-sometimes hundreds of billions\"},\n   {\"Training examples\", \"1\", \
-\"trillions of tokens\"},\n   {\"Training updates\", \"1 (shown by hand)\", \
-\"millions to billions\"}\n   }, Frame -> All, Background -> {None, \
-{LightGray, None}}, Dividers -> All]"], "Input"], 
-  Cell["The arithmetic did not suddenly become magic. The scale became \
-enormous. Every quantity in the right-hand column is produced by the same \
-handful of operations used above \[LongDash] matrix multiplication, softmax, \
-cross-entropy, gradients, gradient descent \[LongDash] repeated over far more \
-parameters, far more data, and far more training steps, and (per Section 16's \
-introduction and Section \"What we left out\" above) combined with additional \
-architectural components we deliberately omitted here: LayerNorm, residual \
-connections, multi-head attention, larger feed-forward networks, positional \
-encodings, and more. A real system is not simply this exact toy multiplied \
-larger \[LongDash] it is this mechanism plus those additional pieces, at a \
-scale where hand computation is impossible and was never the goal.", "Text"], 
+sometimes hundreds of billions\"},\n   {\"Training corpus\", \"1 next-token \
+example\", \"up to trillions of training tokens\"},\n   {\"Training \
+updates\", \"1 (shown by hand)\", \"millions to billions\"}\n   }, Frame -> \
+All, Background -> {None, {LightGray, None}}, Dividers -> All]"], "Input"], 
+  Cell["The underlying operations remain ordinary numerical operations. \
+Production models combine them at vastly greater scale, with additional \
+architectural, training, and systems complexity. Every quantity in the \
+right-hand column is produced by the same handful of operations used above \
+\[LongDash] matrix multiplication, softmax, cross-entropy, gradients, \
+gradient descent \[LongDash] repeated over far more parameters, far more \
+data, and far more training steps, and (per Section 16's introduction and \
+Section \"What we left out\" above) combined with additional architectural \
+components we deliberately omitted here: LayerNorm, residual connections, \
+multi-head attention, larger feed-forward networks, positional encodings, and \
+more. A real system is not simply this exact toy multiplied larger \
+\[LongDash] it is this mechanism plus those additional pieces, at a scale \
+where hand computation is impossible and was never the goal.", "Text"], 
   Cell["Bonus: Does This Generalize? Training Toward a Different Target", 
    "Section"], Cell["Every number from Section 9 onward was computed for one \
 specific goal: teach the model that \"shoe\" is correct. Does the same \
