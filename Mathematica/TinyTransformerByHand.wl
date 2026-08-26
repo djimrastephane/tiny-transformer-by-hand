@@ -39,7 +39,7 @@ TokenIDs::usage = "TokenIDs[tokens_List] gives the vocabulary ID (1-indexed) for
 EmbedTokens::usage = "EmbedTokens[ids_List] returns the input matrix X (rows = positions, columns = embedding dims).";
 ComputeQKV::usage = "ComputeQKV[X_,wq_,wk_,wv_] returns {Q,K,V}.";
 AttentionScoresRaw::usage = "AttentionScoresRaw[Q_,K_] returns Q.Transpose[K].";
-ScaleScores::usage = "ScaleScores[scores_,d_] returns scores/Sqrt[d].";
+ScaleScores::usage = "ScaleScores[scores_,d_] returns N[scores/Sqrt[d]] (numericized immediately, matching the notebook's own convention, so downstream operations like Ordering never have to compare deeply nested exact expressions).";
 CausalMask::usage = "CausalMask[scores_] replaces disallowed (future) positions with -Infinity.";
 SoftmaxRow::usage = "SoftmaxRow[row_] applies the softmax formula to a single row, ignoring -Infinity entries.";
 AttentionProbabilities::usage = "AttentionProbabilities[maskedScores_] applies SoftmaxRow to every row.";
@@ -105,7 +105,7 @@ ComputeQKV[X_, wq_, wk_, wv_] := {X.wq, X.wk, X.wv};
 
 AttentionScoresRaw[Q_, K_] := Q.Transpose[K];
 
-ScaleScores[scores_, d_] := scores/Sqrt[d];
+ScaleScores[scores_, d_] := N[scores/Sqrt[d]];
 
 (* Position i may only attend to position j <= i (no looking at the future). *)
 CausalMask[scores_] := Module[{n = Length[scores]},
