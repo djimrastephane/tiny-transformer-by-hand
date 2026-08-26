@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    a{ color:#45C7B8; } a:hover{ color:#6fd9cc; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 64px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:64px; line-height:1.1; color:#F3F6FC; margin:30px 0 34px; max-width:840px; text-wrap:balance;
+    }
+    .headline .amber{ color:#E8A33D; }
+
+    table{ width:100%; border-collapse:collapse; margin-bottom:28px; }
+    th{ text-align:left; font-family:"IBM Plex Mono", monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#5B6784; padding:0 18px 14px; font-weight:500; }
+    th:not(:first-child), td:not(:first-child){ text-align:right; }
+    td{ font-family:"IBM Plex Mono", monospace; font-size:26px; padding:18px; border-top:1px solid #1B2540; color:#E7ECF5; }
+    td:first-child{ font-family:"IBM Plex Sans", sans-serif; font-size:22px; color:#8592AC; text-align:left; }
+    tr.win td{ color:#5FD08A; }
+    tr.wrong td.pred{ color:#E2604F; }
+    td.pred.correct{ color:#5FD08A; }
+    tr.win td:first-child{ color:#E7ECF5; font-weight:600; }
+
+    .payoff{ font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700; font-size:38px; color:#E7ECF5; margin:8px 0 0; text-wrap:balance; }
+    .payoff .em{ color:#E8A33D; }
+
+    .cta{ margin-top:auto; padding-top:28px; border-top:1px solid #263353; font-size:24px; color:#8592AC; }
+    .cta-link{ font-family:"IBM Plex Mono", monospace; font-size:23px; color:#45C7B8; margin-top:10px; display:block; word-break:break-all; }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">One More (Cheap) Step</span>
+    <span class="slidecount">05 / 06</span>
+  </div>
+
+  <h1 class="headline">LoRA catches up. Then it <span class="amber">overtakes</span>.</h1>
+
+  <table>
+    <tr><th>Stage</th><th>P(shoe)</th><th>Loss</th><th>Top guess</th><th>Moved</th></tr>
+    <tr><td>Before training</td><td>20.1%</td><td>1.6035</td><td class="pred">run</td><td>&mdash;</td></tr>
+    <tr><td>Full fine-tune, 1 step</td><td>43.2%</td><td>0.8404</td><td class="pred correct">shoe</td><td>12</td></tr>
+    <tr><td>LoRA, step 1</td><td>31.0%</td><td>1.1714</td><td class="pred">run</td><td>2</td></tr>
+    <tr class="win"><td>LoRA, step 2</td><td>79.7%</td><td>0.2263</td><td class="pred correct">shoe</td><td>up to 8</td></tr>
+  </table>
+
+  <p class="payoff">By its own second step &mdash; still never touching more than <span class="em">8 of W_Out's effective parameters</span> &mdash; LoRA doesn't just match one step of full fine-tuning. It beats it on every metric measured.</p>
+
+  <div class="cta">Every number here is checked programmatically, not eyeballed &mdash; full notebook, hand worksheet, and reference implementation:
+    <a class="cta-link" href="https://github.com/djimrastephane/tiny-transformer-by-hand">github.com/djimrastephane/tiny-transformer-by-hand</a>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

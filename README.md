@@ -108,6 +108,10 @@ Source: `Mathematica/TinyLoRAByHand.nb`,
 `Mathematica/TinyLoRAByHand.wl`,
 `calculations/LORA_HAND_CALCULATION.md`.
 
+There's also its own 6-slide LinkedIn carousel (`figures/lora-carousel/`)
+— [view it here](https://claude.ai/code/artifact/56763acd-6fc9-4939-ad5c-66d57657d7b2) —
+telling this same before/full-fine-tune/LoRA-step-1/LoRA-step-2 story.
+
 ## Repository structure
 
 ```
@@ -125,8 +129,9 @@ tiny-transformer-by-hand/
         HAND_CALCULATION.md       - paper-and-calculator worksheet with an answer key
         LORA_HAND_CALCULATION.md  - paper-and-calculator worksheet for the LoRA companion, answer key included
     figures/
-        README.md                 - the LinkedIn carousel: links, slide-by-slide contents, source files
+        README.md                 - the LinkedIn carousels: links, slide-by-slide contents, source files
         carousel/                 - the 8 slide sources (.dc.html), canvas layout, and the seeded canvas
+        lora-carousel/            - the LoRA companion's own 6-slide carousel (.dc.html), canvas layout, and seeded canvas
     methodology/
         ASSUMPTIONS.md            - what was simplified, why, and what the one training step does and doesn't update
 ```

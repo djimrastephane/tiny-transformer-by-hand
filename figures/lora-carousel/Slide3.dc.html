@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 60px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:58px; line-height:1.12; color:#F3F6FC; margin:30px 0 36px; max-width:840px; text-wrap:balance;
+    }
+
+    .equation{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:30px; }
+    .op{ color:#5B6784; font-size:34px; }
+    .matbox{
+      display:inline-grid; gap:6px 20px;
+      font-family:"IBM Plex Mono", monospace; font-size:28px;
+      background:#131A2B; border:1px solid #263353; border-radius:8px;
+      padding:16px 20px;
+    }
+    .matbox .mname{ grid-column:1/-1; font-size:15px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:2px; }
+    .matbox .cell{ text-align:right; min-width:1.1em; color:#E7ECF5; }
+    .matbox.b{ grid-template-columns:repeat(1, auto); }
+    .matbox.b .cell{ color:#8592AC; }
+    .matbox.a{ grid-template-columns:repeat(6, auto); }
+    .matbox.zero{ border-color:#2F6E66; grid-template-columns:repeat(6, auto); }
+    .matbox.zero .cell{ color:#5FD08A; }
+
+    .metrics{ display:flex; gap:1px; background:#263353; border:1px solid #263353; border-radius:12px; overflow:hidden; margin-bottom:30px; }
+    .metrics > div{ background:#131A2B; padding:28px 30px; flex:1; }
+    .metrics .cap{ font-family:"IBM Plex Mono", monospace; font-size:19px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:14px; }
+    .metrics .v{ font-family:"IBM Plex Mono", monospace; font-size:34px; color:#E7ECF5; }
+
+    .note{ font-size:24px; color:#8592AC; margin:6px 0 0; max-width:66ch; line-height:1.55; }
+    .note b{ color:#E7ECF5; }
+    .note .em{ color:#5FD08A; font-weight:600; }
+
+    .brandline{
+      margin-top:auto; padding-top:28px; border-top:1px solid #263353;
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
+    }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">Step Zero</span>
+    <span class="slidecount">03 / 06</span>
+  </div>
+
+  <h1 class="headline">B starts at zero. Nothing has changed &mdash; yet.</h1>
+
+  <div class="equation">
+    <div class="matbox b">
+      <div class="mname">B0</div>
+      <div class="cell">0</div>
+      <div class="cell">0</div>
+    </div>
+    <span class="op">&middot;</span>
+    <div class="matbox a">
+      <div class="mname">A0 (fixed, not random)</div>
+      <div class="cell">1</div><div class="cell">-1</div><div class="cell">1</div><div class="cell">-1</div><div class="cell">1</div><div class="cell">-1</div>
+    </div>
+    <span class="op">=</span>
+    <div class="matbox zero">
+      <div class="mname">&Delta;W0</div>
+      <div class="cell">0</div><div class="cell">0</div><div class="cell">0</div><div class="cell">0</div><div class="cell">0</div><div class="cell">0</div>
+      <div class="cell">0</div><div class="cell">0</div><div class="cell">0</div><div class="cell">0</div><div class="cell">0</div><div class="cell">0</div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div><div class="cap">P(&ldquo;shoe&rdquo;)</div><div class="v mono">20.1%</div></div>
+    <div><div class="cap">Loss</div><div class="v mono">1.6035</div></div>
+    <div><div class="cap">Top guess</div><div class="v mono">run</div></div>
+  </div>
+
+  <p class="note">Zero-initializing <b>B</b> is standard LoRA practice: whatever <b>A</b> is, <span class="em">B0&middot;A0 is exactly the zero matrix</span>, so the model behaves identically to the untrained, frozen base &mdash; same probabilities, same loss, as if LoRA weren't there at all.</p>
+
+  <div class="brandline">
+    <span>same starting point as full fine-tuning</span>
+    <span>tiny-lora-by-hand</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

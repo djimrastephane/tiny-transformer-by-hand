@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 64px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:58px; line-height:1.12; color:#F3F6FC; margin:30px 0 16px; max-width:840px; text-wrap:balance;
+    }
+    .headline .amber{ color:#E8A33D; }
+    .lede{ font-size:24px; color:#8592AC; max-width:68ch; line-height:1.5; margin:0 0 30px; }
+    .lede b{ color:#E7ECF5; }
+
+    .compare{
+      display:grid; grid-template-columns:1fr 1fr; gap:1px;
+      background:#263353; border:1px solid #263353; border-radius:12px; overflow:hidden;
+      margin-bottom:22px;
+    }
+    .compare > div{ background:#131A2B; padding:30px 30px; }
+    .compare .cap{ font-family:"IBM Plex Mono", monospace; font-size:19px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:10px; }
+    .compare .sub{ font-size:19px; color:#5B6784; margin-bottom:18px; }
+    .metric{ display:flex; justify-content:space-between; align-items:baseline; padding:12px 0; border-bottom:1px solid #1B2540; }
+    .metric:last-child{ border-bottom:none; }
+    .metric .k{ font-size:22px; color:#8592AC; }
+    .metric .v{ font-family:"IBM Plex Mono", monospace; font-size:32px; color:#E7ECF5; }
+    .compare .full .cap{ color:#5FD08A; }
+    .compare .full .v{ color:#5FD08A; }
+    .compare .lora .cap{ color:#E8A33D; }
+    .metric.wrong .k, .metric.wrong .v{ color:#E2604F; }
+
+    .arrowband{
+      background:#182238; padding:16px 32px; border:1px solid #263353; border-top:none;
+      font-family:"IBM Plex Mono", monospace; font-size:21px; color:#8592AC; text-align:center; font-weight:600;
+      border-radius:0 0 12px 12px; margin-bottom:30px;
+    }
+
+    .payoff{ font-size:25px; color:#8592AC; line-height:1.55; margin:0; max-width:66ch; }
+    .payoff b{ color:#E7ECF5; }
+    .payoff .em{ color:#5FD08A; font-weight:600; }
+
+    .brandline{
+      margin-top:auto; padding-top:28px; border-top:1px solid #263353;
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
+    }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">Step 1: A Surprising Fact</span>
+    <span class="slidecount">04 / 06</span>
+  </div>
+
+  <h1 class="headline">Only <span class="amber">2 of LoRA's 8 numbers</span> move first.</h1>
+  <p class="lede">Because &Delta;W = B&middot;A, the gradient with respect to A is <b>Transpose[B]&middot;G</b> &mdash; with B still zero, that is exactly zero. A can't learn until B gives it something to multiply against.</p>
+
+  <div class="compare">
+    <div class="full">
+      <div class="cap">Full fine-tune, 1 step</div>
+      <div class="sub">all 12 numbers of W_Out move</div>
+      <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v mono">43.2%</span></div>
+      <div class="metric"><span class="k">Loss</span><span class="v mono">0.8404</span></div>
+      <div class="metric"><span class="k">Top guess</span><span class="v mono">shoe &mdash; correct</span></div>
+    </div>
+    <div class="lora">
+      <div class="cap">LoRA, step 1</div>
+      <div class="sub">only B (2 numbers) moves &mdash; A is unchanged</div>
+      <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v mono">31.0%</span></div>
+      <div class="metric"><span class="k">Loss</span><span class="v mono">1.1714</span></div>
+      <div class="metric wrong"><span class="k">Top guess</span><span class="v mono">run &mdash; still wrong</span></div>
+    </div>
+  </div>
+  <div class="arrowband">P(shoe) still rises +10.9 pts and loss still falls &minus;0.4321 &nbsp;&middot;&nbsp; moving only 2 numbers instead of 12</div>
+
+  <p class="payoff">Real progress, from touching a sixth of the numbers &mdash; but not enough yet to flip the top prediction. Full fine-tuning, with its full 12-number capacity, already got there. <span class="em">Give LoRA one more step, and that changes.</span></p>
+
+  <div class="brandline">
+    <span>same starting point, same gradient signal</span>
+    <span>tiny-lora-by-hand</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

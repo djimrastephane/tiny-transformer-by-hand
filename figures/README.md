@@ -39,3 +39,30 @@ Slide 6's closing line points readers to a live browser demo — that's
 [**Web/index.html**](https://djimrastephane.github.io/tiny-transformer-by-hand/),
 served from GitHub Pages, the interactive, zero-install version of this
 same model (see the project's top-level `README.md`).
+
+## LinkedIn carousel: Tiny LoRA, By Hand
+
+**[View / edit / export the LoRA carousel →](https://claude.ai/code/artifact/56763acd-6fc9-4939-ad5c-66d57657d7b2)**
+
+`lora-carousel/` is a separate, 6-slide carousel (same 1080×1350 format
+and visual identity as above) telling the companion project's story:
+freeze `W_Out`, train a rank-1 correction `ΔW = B·A` instead, and watch
+it catch up to (then overtake) one step of full fine-tuning:
+
+1. Hook — "What if you froze the model and taught it anyway?"
+2. The idea — `ΔW = B·A`, a rank-1 correction sized 2×1 times 1×6, laid out against the frozen 2×6 `W_Out`
+3. Step zero — `B0` is zero, so `ΔW0` is exactly zero and the model matches the frozen baseline
+4. Step 1's surprising fact — only `B` (2 numbers) moves, since `A`'s gradient is exactly zero while `B` is zero; real progress, but the top prediction is still wrong
+5. Step 2 (bonus) — the full before/full-fine-tune/LoRA-step-1/LoRA-step-2 comparison table; LoRA overtakes full fine-tuning having touched at most 8 numbers
+6. What this does and doesn't prove — the same honest caveats as `methodology/ASSUMPTIONS.md`, plus the one fact that isn't a simplification: B always moves first
+
+Every number is copied from `Mathematica/TinyLoRAByHand.wl` and
+`calculations/LORA_HAND_CALCULATION.md` — nothing here was estimated or
+re-derived independently.
+
+- `lora-carousel/Main.dc.html`, `Slide2.dc.html` … `Slide6.dc.html` —
+  the source for each slide.
+- `lora-carousel/canvas.json` — how the six slides are laid out on the canvas.
+- `lora-carousel/tiny-lora-linkedin-carousel.html` — the seeded,
+  published canvas; open it directly, or use the published link, to
+  view, edit, and export each slide as PNG/PDF for posting.

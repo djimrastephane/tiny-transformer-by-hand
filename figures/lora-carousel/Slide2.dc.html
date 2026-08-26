@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 60px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:56px; line-height:1.12; color:#F3F6FC; margin:30px 0 40px; max-width:840px; text-wrap:balance;
+    }
+    .headline .amber{ color:#E8A33D; }
+
+    .equation{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:18px; }
+    .op{ color:#5B6784; font-size:34px; }
+    .matbox{
+      display:inline-grid; gap:6px 20px;
+      font-family:"IBM Plex Mono", monospace; font-size:26px;
+      background:#131A2B; border:1px solid #263353; border-radius:8px;
+      padding:16px 20px;
+    }
+    .matbox .mname{ grid-column:1/-1; font-size:15px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:2px; }
+    .matbox .cell{ text-align:right; min-width:1.1em; color:#E7ECF5; }
+    .matbox.frozen{ border-color:#3A4260; grid-template-columns:repeat(6, auto); }
+    .matbox.frozen .cell{ color:#5B6784; }
+    .matbox.frozen .mname{ color:#5B6784; }
+    .matbox.frozen .mname .lock{ color:#8592AC; }
+    .matbox.b{ border-color:#2F6E66; grid-template-columns:repeat(1, auto); }
+    .matbox.b .cell{ color:#5FD08A; }
+    .matbox.a{ border-color:#2F6E66; grid-template-columns:repeat(6, auto); }
+    .matbox.a .cell{ color:#5FD08A; }
+    .matbox.result{ border-color:#7A5A28; grid-template-columns:repeat(6, auto); }
+    .matbox.result .cell{ color:#E8A33D; font-weight:600; }
+
+    .row2{ margin-top:8px; }
+
+    .callouts{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:38px; }
+    .callout{ background:#131A2B; border:1px solid #263353; border-radius:10px; padding:24px 26px; }
+    .callout .num{ font-family:"IBM Plex Mono", monospace; font-size:40px; font-weight:600; color:#E8A33D; }
+    .callout .lab{ font-size:20px; color:#8592AC; margin-top:6px; line-height:1.4; }
+
+    .note{ font-size:23px; color:#8592AC; margin:30px 0 0; max-width:66ch; line-height:1.5; }
+    .note b{ color:#E7ECF5; }
+
+    .brandline{
+      margin-top:auto; padding-top:28px; border-top:1px solid #263353;
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
+    }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">The Idea</span>
+    <span class="slidecount">02 / 06</span>
+  </div>
+
+  <h1 class="headline">Freeze <span class="amber">W_Out</span>. Train <span class="amber">&Delta;W = B &middot; A</span> instead.</h1>
+
+  <div class="equation">
+    <div class="matbox result">
+      <div class="mname">&Delta;W (2&times;6)</div>
+      <div class="cell">?</div><div class="cell">?</div><div class="cell">?</div><div class="cell">?</div><div class="cell">?</div><div class="cell">?</div>
+      <div class="cell">?</div><div class="cell">?</div><div class="cell">?</div><div class="cell">?</div><div class="cell">?</div><div class="cell">?</div>
+    </div>
+    <span class="op">=</span>
+    <div class="matbox b">
+      <div class="mname">B (2&times;1)</div>
+      <div class="cell">b1</div>
+      <div class="cell">b2</div>
+    </div>
+    <span class="op">&middot;</span>
+    <div class="matbox a">
+      <div class="mname">A (1&times;6)</div>
+      <div class="cell">a1</div><div class="cell">a2</div><div class="cell">a3</div><div class="cell">a4</div><div class="cell">a5</div><div class="cell">a6</div>
+    </div>
+  </div>
+
+  <div class="equation row2">
+    <div class="matbox frozen">
+      <div class="mname"><span class="lock">&#128274;</span> W_Out (2&times;6) &mdash; never updated</div>
+      <div class="cell">0</div><div class="cell">1</div><div class="cell">0</div><div class="cell">1</div><div class="cell">-1</div><div class="cell">0</div>
+      <div class="cell">0</div><div class="cell">0</div><div class="cell">1</div><div class="cell">-1</div><div class="cell">0</div><div class="cell">-1</div>
+    </div>
+  </div>
+
+  <div class="callouts">
+    <div class="callout"><div class="num">8</div><div class="lab">numbers in B and A combined, vs. W_Out's 12</div></div>
+    <div class="callout"><div class="num">r = 1</div><div class="lab">the rank of the correction &mdash; the smallest possible, chosen so &Delta;W is one outer product, multipliable by hand</div></div>
+  </div>
+
+  <p class="note">The model's effective output weights become <b>W_Out + &Delta;W</b>. Only B and A ever change; W_Out itself is frozen for the rest of this story.</p>
+
+  <div class="brandline">
+    <span>low-rank adaptation, rank 1</span>
+    <span>tiny-lora-by-hand</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
