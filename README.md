@@ -7,9 +7,10 @@ attention head, one block, tens of parameters — worked out explicitly, one
 matrix multiplication at a time, then trained once, live, in front of you.
 
 **Try it now — no install, no account, no code:**
-[**Open the interactive demo →**](https://claude.ai/code/artifact/686ca801-70dc-49aa-9526-50c9d2143bb8)
-*(also shipped as a static, self-contained page at `Web/index.html` — see
-"Running the web demo" below to host it yourself, e.g. on GitHub Pages.)*
+[**Open the interactive demo →**](https://djimrastephane.github.io/tiny-transformer-by-hand/)
+*(source is the static, self-contained `Web/index.html`, auto-deployed to
+GitHub Pages by `.github/workflows/pages.yml` on every push — see
+"Running the web demo" below.)*
 
 **Prefer a 6-slide visual story?**
 [**View the LinkedIn carousel →**](https://claude.ai/code/artifact/b2a63bf4-2ded-4087-90e1-4b0dbf627c8a)
@@ -121,11 +122,12 @@ what the one worked training step does and does not update (only `W_Out`
 dependencies beyond one Google Fonts stylesheet link, no server required:
 
 - **Locally:** just open `Web/index.html` in any modern browser.
-- **On GitHub Pages:** push this repository to GitHub, enable Pages for
-  the repo (Settings → Pages), and point it at the branch/folder
-  containing `Web/index.html` (or copy it to the repo root / a `docs/`
-  folder, per your Pages configuration) — no server-side compute needed,
-  the entire model runs client-side in JavaScript.
+- **Live on GitHub Pages:** [djimrastephane.github.io/tiny-transformer-by-hand](https://djimrastephane.github.io/tiny-transformer-by-hand/) —
+  no server-side compute, the entire model runs client-side in
+  JavaScript. Deployment is automatic: `.github/workflows/pages.yml`
+  redeploys `Web/` straight to Pages on every push that touches it, so
+  editing `Web/index.html` and pushing to `main` is the entire release
+  process.
 
 ## Running the Mathematica notebook
 

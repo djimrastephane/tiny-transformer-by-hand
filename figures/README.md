@@ -35,6 +35,6 @@ canvas's own editor and re-extract), then re-seed and republish — see
 the project's design-canvas tooling for the exact commands.
 
 Slide 6's closing line points readers to a live browser demo — that's
-[**Web/index.html**](https://claude.ai/code/artifact/686ca801-70dc-49aa-9526-50c9d2143bb8),
-the interactive, zero-install version of this same model (see the
-project's top-level `README.md`).
+[**Web/index.html**](https://djimrastephane.github.io/tiny-transformer-by-hand/),
+served from GitHub Pages, the interactive, zero-install version of this
+same model (see the project's top-level `README.md`).
