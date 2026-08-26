@@ -33,7 +33,7 @@ One hand-computable update — computed here with a fixed learning rate of
 2, updating only the output projection `W_Out` — is enough to flip this
 one example's top prediction from wrong to right, roughly double
 P("shoe"), and roughly halve the loss. Every number above is checked
-programmatically (27 automated tests — see `Mathematica/TinyTransformerByHand.wl`)
+programmatically (34 automated tests — see `Mathematica/TinyTransformerByHand.wl`)
 and reproducible with paper and a calculator (see `calculations/HAND_CALCULATION.md`).
 
 ## What this is, and is not
@@ -45,21 +45,22 @@ scaled-down version of ChatGPT, Claude, or any production system. Every
 number here belongs to a teaching-sized toy built to expose mechanics, not
 approximate a real model's behavior.
 
-## Three ways into the project
+## Ways into the project
 
 | Layer | What it's for | Where |
 |---|---|---|
-| **Interactive web demo** | The main thing to share and click through. Zero-install, runs entirely in the browser. Sliders for learning rate and one embedding value, a training-step toggle, a live probability readout, a "Show the maths" panel exposing every matrix, and a "Paper Mode" 9-step worksheet walkthrough. | `Web/index.html` |
-| **Mathematica notebook** | The source of mathematical truth. Every operation — embedding lookup, Q/K/V, scaled dot-product attention, causal masking, softmax, cross-entropy, the gradient, gradient descent — derived and displayed explicitly, plus an automated 27-check verification suite. | `Mathematica/TinyTransformerByHand.nb`, `Mathematica/TinyTransformerByHand.wl` |
+| **Interactive web demo** | The main thing to share and click through. Zero-install, runs entirely in the browser. Sliders for learning rate and one embedding value, a training-step toggle, a live probability readout, a "Show the maths" panel exposing every matrix, and a "Paper Mode" 9-step worksheet walkthrough. | `Web/index.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/)) |
+| **Full notebook, statically rendered** | Every derivation Mathematica computed, laid out as one linear, no-install page — for a reader who wants to see the whole worked argument (not just play with sliders) without needing Mathematica or Wolfram Player installed. Not interactive; the web demo above covers that. | `Web/notebook.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/notebook.html)) |
+| **Mathematica notebook** | The source of mathematical truth, and the only way to actually re-evaluate every cell yourself. Every operation — embedding lookup, Q/K/V, scaled dot-product attention, causal masking, softmax, cross-entropy, the gradient, gradient descent — derived and displayed explicitly, plus an automated 34-check verification suite. Requires Mathematica or (free) Wolfram Player. | `Mathematica/TinyTransformerByHand.nb`, `Mathematica/TinyTransformerByHand.wl` |
 | **Hand-calculation worksheet** | Paper and a calculator. Given values, fill-in-the-blank steps, and an answer key. | `calculations/HAND_CALCULATION.md` |
 
-The web demo is not an independent reimplementation guessing at the same
-answer — its JavaScript is a direct, unchanged port of the equations
-already derived and verified in the Mathematica notebook. Mathematica is
-the development and verification environment; the browser page is the
-delivery mechanism.
+The web demo and the static notebook page are not independent
+reimplementations guessing at the same answer — both are generated
+directly from the equations and numbers already derived and verified in
+the Mathematica notebook. Mathematica is the development and
+verification environment; the browser pages are the delivery mechanism.
 
-There's also a 7-slide LinkedIn carousel (`figures/carousel/`) covering
+There's also an 8-slide LinkedIn carousel (`figures/carousel/`) covering
 the same story for social posts —
 [view it here](https://claude.ai/code/artifact/b2a63bf4-2ded-4087-90e1-4b0dbf627c8a) —
 built from these same verified numbers, not a separate retelling.
@@ -74,11 +75,12 @@ tiny-transformer-by-hand/
         TinyTransformerByHand.wl  - standalone reference implementation + RunAllChecks[] verification suite
     Web/
         index.html                - the interactive browser demo (self-contained, no build step)
+        notebook.html             - the full notebook, statically rendered (no install, not interactive)
     calculations/
         HAND_CALCULATION.md       - paper-and-calculator worksheet with an answer key
     figures/
         README.md                 - the LinkedIn carousel: links, slide-by-slide contents, source files
-        carousel/                 - the 7 slide sources (.dc.html), canvas layout, and the seeded canvas
+        carousel/                 - the 8 slide sources (.dc.html), canvas layout, and the seeded canvas
     methodology/
         ASSUMPTIONS.md            - what was simplified, why, and what the one training step does and doesn't update
 ```
@@ -118,16 +120,24 @@ what the one worked training step does and does not update (only `W_Out`
 
 ## Running the web demo
 
-`Web/index.html` is a single, self-contained file — no build step, no
-dependencies beyond one Google Fonts stylesheet link, no server required:
+`Web/index.html` and `Web/notebook.html` are both single, self-contained
+files — no build step, no dependencies beyond one Google Fonts
+stylesheet link, no server required:
 
-- **Locally:** just open `Web/index.html` in any modern browser.
-- **Live on GitHub Pages:** [djimrastephane.github.io/tiny-transformer-by-hand](https://djimrastephane.github.io/tiny-transformer-by-hand/) —
-  no server-side compute, the entire model runs client-side in
-  JavaScript. Deployment is automatic: `.github/workflows/pages.yml`
-  redeploys `Web/` straight to Pages on every push that touches it, so
-  editing `Web/index.html` and pushing to `main` is the entire release
+- **Locally:** just open either file in any modern browser.
+- **Live on GitHub Pages:** [djimrastephane.github.io/tiny-transformer-by-hand](https://djimrastephane.github.io/tiny-transformer-by-hand/)
+  (interactive demo) and
+  [.../notebook.html](https://djimrastephane.github.io/tiny-transformer-by-hand/notebook.html)
+  (static notebook) — no server-side compute, everything runs
+  client-side. Deployment is automatic: `.github/workflows/pages.yml`
+  redeploys the whole `Web/` folder to Pages on every push that touches
+  it, so editing either file and pushing to `main` is the entire release
   process.
+
+`notebook.html` is generated from Mathematica's own computed values
+(exported as JSON, never hand-retyped) by
+`Web/build_notebook.py` — see that script if you change the notebook
+and need to regenerate this page.
 
 ## Running the Mathematica notebook
 
