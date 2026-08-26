@@ -23,7 +23,7 @@
       font-family:"IBM Plex Sans", system-ui, sans-serif;
       color:#E7ECF5;
       display:flex; flex-direction:column;
-      padding:88px 88px 72px;
+      padding:88px 88px 64px;
     }
     .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
     .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
@@ -31,24 +31,38 @@
     .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
     .headline{
       font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
-      font-size:52px; line-height:1.14; color:#F3F6FC; margin:30px 0 36px; max-width:840px; text-wrap:balance;
+      font-size:58px; line-height:1.12; color:#F3F6FC; margin:30px 0 20px; max-width:840px; text-wrap:balance;
+    }
+    .lede{ font-size:24px; color:#8592AC; max-width:66ch; line-height:1.5; margin:0 0 30px; }
+    .lede b{ color:#E7ECF5; }
+
+    .compare{
+      display:grid; grid-template-columns:1fr 1fr; gap:1px;
+      background:#263353; border:1px solid #263353; border-radius:12px; overflow:hidden;
+      margin-bottom:0;
+    }
+    .compare > div{ background:#131A2B; padding:30px 30px; }
+    .compare .cap{ font-family:"IBM Plex Mono", monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:20px; }
+    .compare .after .cap{ color:#5FD08A; }
+    .metric{ display:flex; justify-content:space-between; align-items:baseline; padding:12px 0; border-bottom:1px solid #1B2540; }
+    .metric:last-child{ border-bottom:none; }
+    .metric .k{ font-size:22px; color:#8592AC; }
+    .metric .v{ font-family:"IBM Plex Mono", monospace; font-size:34px; color:#E7ECF5; }
+    .compare .after .v{ color:#5FD08A; }
+    .compare .before .v.wrong{ color:#E2604F; }
+
+    .arrowband{
+      background:#182238; padding:16px 32px; border:1px solid #263353; border-top:none;
+      font-family:"IBM Plex Mono", monospace; font-size:22px; color:#E8A33D; text-align:center; font-weight:600;
+      border-radius:0 0 12px 12px;
     }
 
-    .list{ display:flex; flex-direction:column; }
-    .row{ display:grid; grid-template-columns:300px 1fr; gap:24px; padding:18px 0; border-bottom:1px solid #1B2540; }
-    .row .k{ font-family:"IBM Plex Mono", monospace; font-size:24px; color:#E8A33D; }
-    .row .v{ font-size:23px; color:#8592AC; line-height:1.45; }
-
-    .flag{
-      margin-top:30px; background:#131A2B; border:1px solid #263353; border-radius:10px;
-      padding:26px 30px;
-    }
-    .flag .lab{ font-family:"IBM Plex Mono", monospace; font-size:19px; letter-spacing:0.08em; text-transform:uppercase; color:#45C7B8; margin-bottom:10px; }
-    .flag p{ font-size:23px; color:#8592AC; line-height:1.55; margin:0; }
-    .flag b{ color:#E7ECF5; }
+    .payoff{ font-size:25px; color:#8592AC; line-height:1.55; margin:30px 0 0; max-width:66ch; }
+    .payoff b{ color:#E7ECF5; }
+    .payoff .em{ color:#E8A33D; font-weight:600; }
 
     .brandline{
-      margin-top:auto; padding-top:32px; border-top:1px solid #263353;
+      margin-top:auto; padding-top:28px; border-top:1px solid #263353;
       display:flex; justify-content:space-between; align-items:center;
       font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
     }
@@ -57,28 +71,34 @@
 
 <div class="slide">
   <div class="topbar">
-    <span class="kicker">What&rsquo;s Simplified</span>
-    <span class="slidecount">07 / 07</span>
+    <span class="kicker">Bonus: Generalizing</span>
+    <span class="slidecount">07 / 08</span>
   </div>
 
-  <h1 class="headline">None of this is hidden. All of it is a trade for transparency.</h1>
+  <h1 class="headline">Same machine. A different target.</h1>
+  <p class="lede">Retrain the identical example toward <b>&ldquo;cement&rdquo;</b> instead of &ldquo;shoe&rdquo; &mdash; cementing a casing string is just as real a next step. Attention never looks at the target, so nothing upstream changes; only the loss, gradient, and update do.</p>
 
-  <div class="list">
-    <div class="row"><span class="k">LayerNorm</span><span class="v">Stabilizes deep stacks. With 1 block, nothing to destabilize.</span></div>
-    <div class="row"><span class="k">Residual links</span><span class="v">Give gradients a shortcut through many layers. There is only one layer here.</span></div>
-    <div class="row"><span class="k">Dropout</span><span class="v">Fights overfitting on large datasets. There is exactly 1 training example.</span></div>
-    <div class="row"><span class="k">Multi-head attn.</span><span class="v">1 head already shows the full mechanism; a 2nd would repeat the same arithmetic.</span></div>
-    <div class="row"><span class="k">Feed-forward layer</span><span class="v">Its ReLU nonlinearity is shown as a small worked example &mdash; just not folded into training.</span></div>
+  <div class="compare">
+    <div class="before">
+      <div class="cap">Before training</div>
+      <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v mono">7.3%</span></div>
+      <div class="metric"><span class="k">Loss</span><span class="v mono">2.6128</span></div>
+      <div class="metric"><span class="k">Top guess</span><span class="v mono wrong">RUN</span></div>
+    </div>
+    <div class="after">
+      <div class="cap">After 1 update</div>
+      <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v mono">21.8%</span></div>
+      <div class="metric"><span class="k">Loss</span><span class="v mono">1.5230</span></div>
+      <div class="metric"><span class="k">Top guess</span><span class="v mono">CEMENT</span></div>
+    </div>
   </div>
+  <div class="arrowband">P(cement) &nbsp;+14.5 pts&nbsp; &middot; &nbsp;Loss &minus;1.0898&nbsp; &middot; &nbsp;same learning rate, harder start</div>
 
-  <div class="flag">
-    <div class="lab">the sharper one</div>
-    <p><b>Positional encodings:</b> self-attention has no built-in sense of order &mdash; a causal mask only tells position 1 from position 2 because, with 2 tokens, there are only 2 possible masks. It says what a position may look at, not where it sits. Longer sequences need real position signals: learned embeddings, sinusoidal encodings, or RoPE.</p>
-  </div>
+  <p class="payoff">&ldquo;Cement&rdquo; started as the <b>lowest-probability</b> token of all six &mdash; so this update only barely edges it past &ldquo;run&rdquo; for first place, <span class="em">a ~0.13-point photo finish</span>, next to &ldquo;shoe&rdquo;'s decisive ~25-point win on Slide 6. Generalizing correctly doesn&rsquo;t mean generalizing identically.</p>
 
   <div class="brandline">
+    <span>run casing &rarr; cement</span>
     <span>tiny-transformer-by-hand</span>
-    <span>methodology/ASSUMPTIONS.md</span>
   </div>
 </div>
 </x-dc>

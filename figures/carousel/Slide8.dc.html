@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 72px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:52px; line-height:1.14; color:#F3F6FC; margin:30px 0 36px; max-width:840px; text-wrap:balance;
+    }
+
+    .list{ display:flex; flex-direction:column; }
+    .row{ display:grid; grid-template-columns:300px 1fr; gap:24px; padding:18px 0; border-bottom:1px solid #1B2540; }
+    .row .k{ font-family:"IBM Plex Mono", monospace; font-size:24px; color:#E8A33D; }
+    .row .v{ font-size:23px; color:#8592AC; line-height:1.45; }
+
+    .flag{
+      margin-top:30px; background:#131A2B; border:1px solid #263353; border-radius:10px;
+      padding:26px 30px;
+    }
+    .flag .lab{ font-family:"IBM Plex Mono", monospace; font-size:19px; letter-spacing:0.08em; text-transform:uppercase; color:#45C7B8; margin-bottom:10px; }
+    .flag p{ font-size:23px; color:#8592AC; line-height:1.55; margin:0; }
+    .flag b{ color:#E7ECF5; }
+
+    .brandline{
+      margin-top:auto; padding-top:32px; border-top:1px solid #263353;
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
+    }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">What&rsquo;s Simplified</span>
+    <span class="slidecount">08 / 08</span>
+  </div>
+
+  <h1 class="headline">None of this is hidden. All of it is a trade for transparency.</h1>
+
+  <div class="list">
+    <div class="row"><span class="k">LayerNorm</span><span class="v">Stabilizes deep stacks. With 1 block, nothing to destabilize.</span></div>
+    <div class="row"><span class="k">Residual links</span><span class="v">Give gradients a shortcut through many layers. There is only one layer here.</span></div>
+    <div class="row"><span class="k">Dropout</span><span class="v">Fights overfitting on large datasets. There is exactly 1 training example.</span></div>
+    <div class="row"><span class="k">Multi-head attn.</span><span class="v">1 head already shows the full mechanism; a 2nd would repeat the same arithmetic.</span></div>
+    <div class="row"><span class="k">Feed-forward layer</span><span class="v">Its ReLU nonlinearity is shown as a small worked example &mdash; just not folded into training.</span></div>
+  </div>
+
+  <div class="flag">
+    <div class="lab">the sharper one</div>
+    <p><b>Positional encodings:</b> self-attention has no built-in sense of order &mdash; a causal mask only tells position 1 from position 2 because, with 2 tokens, there are only 2 possible masks. It says what a position may look at, not where it sits. Longer sequences need real position signals: learned embeddings, sinusoidal encodings, or RoPE.</p>
+  </div>
+
+  <div class="brandline">
+    <span>tiny-transformer-by-hand</span>
+    <span>methodology/ASSUMPTIONS.md</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

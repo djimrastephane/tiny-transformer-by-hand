@@ -6,7 +6,8 @@
     { "file": "Slide4.dc.html", "x": 3600, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
     { "file": "Slide5.dc.html", "x": 4800, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
     { "file": "Slide6.dc.html", "x": 6000, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
-    { "file": "Slide7.dc.html", "x": 7200, "y": 0, "w": 1080, "h": 1350, "print": "fixed" }
+    { "file": "Slide7.dc.html", "x": 7200, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide8.dc.html", "x": 8400, "y": 0, "w": 1080, "h": 1350, "print": "fixed" }
   ],
   "launch": { "view": "canvas" }
 }
