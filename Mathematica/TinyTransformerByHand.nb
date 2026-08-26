@@ -490,6 +490,53 @@ connections, multi-head attention, larger feed-forward networks, positional \
 encodings, and more. A real system is not simply this exact toy multiplied \
 larger \[LongDash] it is this mechanism plus those additional pieces, at a \
 scale where hand computation is impossible and was never the goal.", "Text"], 
+  Cell["Bonus: Does This Generalize? Training Toward a Different Target", 
+   "Section"], Cell["Every number from Section 9 onward was computed for one \
+specific goal: teach the model that \"shoe\" is correct. Does the same \
+mechanism work if a different, equally real continuation of \"run casing\" \
+were the goal instead \[LongDash] say, \"cement\" (cementing a casing string \
+is a genuine next step in a completions program)? Sections 2 through 8 never \
+look at the target at all: X, Q, K, V, the attention weights, and h depend \
+only on the input tokens \"run\" and \"casing\". So h below is exactly what \
+Section 8 already computed \[LongDash] nothing upstream of it is recomputed."\
+, "Text"], Cell[BoxData["cementIndex = First[Flatten[Position[Vocabulary, \
+\"cement\"]]];\npCementBefore = \
+probabilities[[cementIndex]];\nlossCementBefore = \
+-Log[pCementBefore];\n{\"cement's index\" -> cementIndex, \"P(cement) \
+before\" -> N[pCementBefore, 4], \"Loss before\" -> N[lossCementBefore, 4]}"]\
+, "Input"], Cell["\"cement\" starts as the single lowest-probability token of \
+all 6 \[LongDash] a much worse starting guess than \"shoe\" had (20.1%), so \
+its loss (~2.613) is correspondingly larger. Everything below repeats \
+Sections 12-13 exactly, with \"cement\" in place of \"shoe\":", "Text"], 
+  Cell[BoxData["cementOneHot = ReplacePart[ConstantArray[0, 6], cementIndex \
+-> 1];\ncementDLogits = probabilities - cementOneHot;\ncementDWOut = \
+Outer[Times, h, cementDLogits];\nMatrixForm[N[cementDWOut, 4]]"], "Input"], 
+  Cell[BoxData["cementWOutNew = WOut - \
+learningRate*cementDWOut;\ncementLogitsNew = h.cementWOutNew;\ncementProbsNew \
+= Softmax2[cementLogitsNew];\npCementAfter = \
+cementProbsNew[[cementIndex]];\nlossCementAfter = \
+-Log[pCementAfter];\nGrid[{\n   {\"\", \"Before training\", \"After \
+training\"},\n   {\"P(\\\"cement\\\")\", N[pCementBefore, 4], N[pCementAfter, \
+4]},\n   {\"Loss\", N[lossCementBefore, 4], N[lossCementAfter, 4]},\n   \
+{\"Predicted token\", Vocabulary[[First[Ordering[probabilities, -1]]]],\n     \
+Vocabulary[[First[Ordering[cementProbsNew, -1]]]]}\n   }, Frame -> All, \
+Dividers -> All]"], "Input"], Cell[BoxData["{\"P(cement) increased?\" -> \
+pCementAfter > pCementBefore, \"Loss decreased?\" -> lossCementAfter < \
+lossCementBefore, \"gap between cement and run, after (pts)\" -> \
+N[(cementProbsNew[[cementIndex]] - cementProbsNew[[2]])*100, 3]}"], "Input"], 
+  Cell["Same mechanism, same learning rate, a different but equally valid \
+target \[LongDash] and P(\"cement\") still rises, from 7.3% to 21.8%, while \
+the loss still falls, from 2.613 to 1.523, both computed and checked above, \
+not assumed. But look closely at the predicted token: \"cement\" only barely \
+overtakes \"run\" (21.8% vs. 21.7%, a margin of about 0.13 percentage points) \
+\[LongDash] nowhere near as decisive as \"shoe\"'s win in Section 14 (43.2% \
+vs. \"run\"'s 18.0%, a margin of about 25 points). That difference is not a \
+flaw; it is exactly what gradient descent predicts. \"shoe\" started at \
+20.1%, already the second-best guess; \"cement\" started at 7.3%, the worst \
+of all six. The same size of step covers proportionally less ground when \
+there is further to go \[LongDash] generalizing correctly does not mean \
+generalizing identically. This alternate-target scenario is checked \
+automatically too; see Appendix A.", "Text"], 
   Cell["Interactive: What Happens If I Change This Number?", "Section"], 
   Cell["The three controls below let you perturb the trained model along \
 three different axes: the learning rate used for the update, one specific \
@@ -579,11 +626,14 @@ are actually used for the second forward pass, and \[LongDash] the two claims \
 this whole notebook depends on \[LongDash] P(\"shoe\") increases and the loss \
 decreases after the one training step. This cell loads \
 TinyTransformerByHand.wl (the standalone reference implementation shipped \
-alongside this notebook) and runs its full check suite.", "Text"], 
-  Cell[BoxData["notebookDir = Quiet[NotebookDirectory[]];\nIf[! \
+alongside this notebook) and runs its full check suite, then runs the same \
+class of checks for the \"Bonus\" section's alternate target, \"cement\".", 
+   "Text"], Cell[BoxData["notebookDir = Quiet[NotebookDirectory[]];\nIf[! \
 StringQ[notebookDir], notebookDir = \
 Directory[]];\nSetDirectory[notebookDir];\nQuiet[Get[\"TinyTransformerByHand.\
-wl\"], {General::shdw}];\nTinyTransformerByHand`RunAllChecks[];"], "Input"], 
+wl\"], \
+{General::shdw}];\nTinyTransformerByHand`RunAllChecks[];\nTinyTransformerByHa\
+nd`RunAlternateTargetChecks[\"cement\"];"], "Input"], 
   Cell["Appendix B: Optional Cross-Check With a Built-In Function", 
    "Section"], Cell["As a final, optional sanity check \[LongDash] and only \
 as a cross-check, never as a replacement for the manual derivation above \

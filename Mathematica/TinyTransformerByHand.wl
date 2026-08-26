@@ -52,7 +52,9 @@ LogitGradient::usage = "LogitGradient[p_,targetIndex_] returns p - oneHot(target
 OutputWeightGradient::usage = "OutputWeightGradient[h_,dLogits_] returns the gradient of the loss with respect to WOut, i.e. Outer[Times,h,dLogits].";
 GradientDescentStep::usage = "GradientDescentStep[w_,grad_,lr_] returns w - lr*grad.";
 ForwardPass::usage = "ForwardPass[wOutMatrix_, wqMatrix_, wkMatrix_, wvMatrix_, embMatrix_] runs the full forward pass for the fixed input \"run casing\" and returns an Association of every intermediate quantity.";
+ForwardPassGeneral::usage = "ForwardPassGeneral[wOutMatrix_, wqMatrix_, wkMatrix_, wvMatrix_, embMatrix_, targetToken_] is ForwardPass generalized to an arbitrary target token, for demonstrating that the same mechanism works for any training target, not just \"shoe\".";
 RunAllChecks::usage = "RunAllChecks[] runs the full worked example end to end and prints a pass/fail report for every mathematical property the notebook relies on.";
+RunAlternateTargetChecks::usage = "RunAlternateTargetChecks[targetToken_] runs the same class of checks as RunAllChecks[], but training toward targetToken instead of \"shoe\", to confirm the mechanism generalizes.";
 
 Begin["`Private`"];
 
@@ -195,6 +197,62 @@ ForwardPass[wOutMatrix_, wqMatrix_, wkMatrix_, wvMatrix_, embMatrix_] := Module[
 ];
 
 (* ---------------------------------------------------------------------
+   4b. Same forward pass, generalized to an arbitrary target token.
+       Everything through h is identical to ForwardPass -- attention
+       never looks at the target. Only the loss/gradient section
+       changes. Kept as a separate function (rather than adding a
+       parameter to ForwardPass) so nothing that already depends on
+       ForwardPass's exact behavior is at risk of changing.
+   --------------------------------------------------------------------- *)
+
+ForwardPassGeneral[wOutMatrix_, wqMatrix_, wkMatrix_, wvMatrix_, embMatrix_, targetToken_String] := Module[
+  {inputTokens, ids, X, Q, K, V, rawScores, scaled, masked, attn, attnOut, h,
+   logits, probs, targetIndex, loss, dLogits, dWOut},
+
+  inputTokens = {"run", "casing"};
+  ids = TokenIDs[inputTokens];
+  X = embMatrix[[ids]];
+
+  {Q, K, V} = ComputeQKV[X, wqMatrix, wkMatrix, wvMatrix];
+
+  rawScores = AttentionScoresRaw[Q, K];
+  scaled = ScaleScores[rawScores, 2];
+  masked = CausalMask[scaled];
+  attn = AttentionProbabilities[masked];
+  attnOut = AttentionOutputMatrix[attn, V];
+
+  h = attnOut[[2]];
+
+  logits = Logits[h, wOutMatrix];
+  probs = Softmax[logits];
+
+  targetIndex = First[TokenIDs[{targetToken}]];
+  loss = CrossEntropyLoss[probs, targetIndex];
+  dLogits = LogitGradient[probs, targetIndex];
+  dWOut = OutputWeightGradient[h, dLogits];
+
+  <|
+    "InputTokens" -> inputTokens,
+    "TokenIDs" -> ids,
+    "X" -> X,
+    "Q" -> Q, "K" -> K, "V" -> V,
+    "RawScores" -> rawScores,
+    "ScaledScores" -> scaled,
+    "MaskedScores" -> masked,
+    "AttentionWeights" -> attn,
+    "AttentionOutput" -> attnOut,
+    "h" -> h,
+    "Logits" -> logits,
+    "Probabilities" -> probs,
+    "TargetIndex" -> targetIndex,
+    "TargetToken" -> targetToken,
+    "Loss" -> loss,
+    "dLogits" -> dLogits,
+    "dWOut" -> dWOut
+  |>
+];
+
+(* ---------------------------------------------------------------------
    5. Verification suite
    --------------------------------------------------------------------- *)
 
@@ -260,6 +318,44 @@ RunAllChecks[] := Module[
   addCheck["Loss decreases after the update", after["Loss"] < before["Loss"]];
 
   Print["=== TinyTransformerByHand verification ==="];
+  Scan[
+    Print[If[Last[#], "  [PASS] ", "  [FAIL] "], First[#]] &,
+    results
+  ];
+  If[AllTrue[results, Last],
+    Print["ALL CHECKS PASSED (", Length[results], " checks)"],
+    Print["*** SOME CHECKS FAILED ***"]
+  ];
+
+  <|"Before" -> before, "WOutNew" -> wOutNew, "After" -> after, "Checks" -> results|>
+];
+
+RunAlternateTargetChecks[targetToken_String] := Module[
+  {before, wOutNew, after, results = {}, addCheck},
+
+  addCheck[name_, cond_] := AppendTo[results, name -> TrueQ[cond]];
+
+  before = ForwardPassGeneral[WOut, WQ, WK, WV, EmbeddingMatrix, targetToken];
+
+  addCheck["Target index points to \"" <> targetToken <> "\"",
+    Vocabulary[[before["TargetIndex"]]] === targetToken];
+  addCheck["Output probabilities sum to 1",
+    Abs[Total[before["Probabilities"]] - 1] < 10^-9];
+  addCheck["Loss equals -Log[P(target)]",
+    Abs[before["Loss"] - (-Log[before["Probabilities"][[before["TargetIndex"]]]])] < 10^-12];
+  addCheck["dLogits is negative only at the target index",
+    Count[before["dLogits"], x_ /; x < 0] == 1 && before["dLogits"][[before["TargetIndex"]]] < 0];
+
+  wOutNew = GradientDescentStep[WOut, before["dWOut"], ModelLearningRate];
+  addCheck["Updated weights actually differ from old weights", wOutNew != WOut];
+
+  after = ForwardPassGeneral[wOutNew, WQ, WK, WV, EmbeddingMatrix, targetToken];
+
+  addCheck["P(" <> targetToken <> ") increases after the update",
+    after["Probabilities"][[after["TargetIndex"]]] > before["Probabilities"][[before["TargetIndex"]]]];
+  addCheck["Loss decreases after the update", after["Loss"] < before["Loss"]];
+
+  Print["=== Alternate-target verification: \"" <> targetToken <> "\" ==="];
   Scan[
     Print[If[Last[#], "  [PASS] ", "  [FAIL] "], First[#]] &,
     results

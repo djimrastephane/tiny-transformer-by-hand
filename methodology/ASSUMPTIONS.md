@@ -89,6 +89,29 @@ explicitly and sketches the further chain-rule steps for anyone who
 wants to continue by hand, rather than presenting a fully
 backpropagated model that wasn't actually derived end-to-end.
 
+## Does it generalize beyond "shoe"?
+
+The notebook's "Bonus" section (right after Section 16) retargets the
+identical trained example toward a different, equally real
+continuation of "run casing": **"cement"** (cementing a casing string
+is a genuine next step in a completions program). Sections 2–8 never
+look at the target token, so `X`, `Q`, `K`, `V`, and `h` are exactly
+what they already were — only the loss, gradient, and update change.
+
+The result is not a copy-pasted repeat of the "shoe" case: `"cement"`
+starts as the single **lowest**-probability token of all 6 (7.3%,
+loss ≈ 2.613), versus `"shoe"`'s comparatively strong starting position
+(20.1%, already second-best). The same learning rate and the same
+mechanism still raise `P("cement")` (7.3% → 21.8%) and lower the loss
+(2.613 → 1.523) — but "cement" only barely overtakes "run" for the top
+spot (21.8% vs. 21.7%, a ~0.13-point margin), nowhere near "shoe"'s
+decisive ~25-point win. That gap is exactly what gradient descent
+predicts: the same size of step covers proportionally less ground when
+there's further to go. Verified via
+`` TinyTransformerByHand`RunAlternateTargetChecks["cement"] `` in
+`TinyTransformerByHand.wl`, run automatically alongside the main
+27-check suite in the notebook's Appendix A.
+
 ## Numerical verification, not just narrative
 
 Every claim in this project is checked programmatically before being
