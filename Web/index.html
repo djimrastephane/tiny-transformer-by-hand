@@ -511,6 +511,28 @@
   </section>
 
   <section>
+    <div class="section-label"><span class="tick"></span>Bonus: does this generalize?</div>
+    <div class="panel panel-pad">
+      <p class="maths-note" style="margin:0 0 16px;">Retarget the identical trained example toward a different, equally real continuation of &ldquo;run casing&rdquo; &mdash; <b style="color:var(--text)">&ldquo;cement&rdquo;</b> (cementing a casing string is a genuine next step). Attention never looks at the target, so X, Q, K, V, and h are unchanged here &mdash; only the loss, gradient, and update differ. This uses the same fixed example as Paper Mode (embedding = 1.0, learning rate = 2.0), independent of the sliders above.</p>
+      <div class="compare">
+        <div class="before">
+          <div class="cap">Before training</div>
+          <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v num" id="cementPBefore">&mdash;</span></div>
+          <div class="metric"><span class="k">Loss</span><span class="v num" id="cementLossBefore">&mdash;</span></div>
+          <div class="metric"><span class="k">Top guess</span><span class="v num" id="cementPredBefore">&mdash;</span></div>
+        </div>
+        <div class="after">
+          <div class="cap">After 1 update</div>
+          <div class="metric"><span class="k">P(&ldquo;cement&rdquo;)</span><span class="v num" id="cementPAfter">&mdash;</span></div>
+          <div class="metric"><span class="k">Loss</span><span class="v num" id="cementLossAfter">&mdash;</span></div>
+          <div class="metric"><span class="k">Top guess</span><span class="v num" id="cementPredAfter">&mdash;</span></div>
+        </div>
+        <div class="delta-row" id="cementDeltaRow"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <div class="panel paper-cta">
       <div class="txt">
         <h3>Try it yourself, on paper</h3>
@@ -602,8 +624,9 @@
     return {X:X,Q:Q,K:K,V:V,raw:raw,scaled:scaled,masked:masked,attn:attn,attnOut:attnOut,h:h,logits:logits,probs:probs};
   }
 
-  function gradientStep(base, lr){
-    var oneHot = VOCAB.map(function(_,i){ return i===TARGET_IDX?1:0; });
+  function gradientStep(base, lr, targetIdx){
+    if(targetIdx===undefined) targetIdx = TARGET_IDX;
+    var oneHot = VOCAB.map(function(_,i){ return i===targetIdx?1:0; });
     var dLogits = base.probs.map(function(p,i){ return p-oneHot[i]; });
     var dWOut = outer(base.h, dLogits);
     var wOutNew = [
@@ -795,6 +818,25 @@
   /* ---------------- paper mode ---------------- */
   var CANON = forwardPass(1, WOUT); // casing embedding = 1 -> matches HAND_CALCULATION.md exactly
   var CANON_GRAD = gradientStep(CANON, 2); // learning rate = 2
+
+  /* ---------------- bonus: does this generalize to a different target? ---------------- */
+  var CEMENT_IDX = 4;
+  var cementGrad = gradientStep(CANON, 2, CEMENT_IDX);
+  var cementAfter = forwardPass(1, cementGrad.wOutNew);
+  var cementPBefore = CANON.probs[CEMENT_IDX], cementLossBefore = -Math.log(cementPBefore);
+  var cementPAfter = cementAfter.probs[CEMENT_IDX], cementLossAfter = -Math.log(cementPAfter);
+
+  document.getElementById("cementPBefore").textContent = pct(cementPBefore);
+  document.getElementById("cementLossBefore").textContent = fmt(cementLossBefore,4);
+  document.getElementById("cementPredBefore").textContent = VOCAB[argmax(CANON.probs)];
+
+  document.getElementById("cementPAfter").textContent = pct(cementPAfter);
+  document.getElementById("cementLossAfter").textContent = fmt(cementLossAfter,4);
+  document.getElementById("cementPredAfter").textContent = VOCAB[argmax(cementAfter.probs)];
+
+  var cementGapPts = (cementAfter.probs[CEMENT_IDX] - cementAfter.probs[1]) * 100; // margin over "run"
+  document.getElementById("cementDeltaRow").innerHTML =
+    '&ldquo;cement&rdquo; starts as the lowest-probability token of all 6 &mdash; the same update that gave &ldquo;shoe&rdquo; a decisive ~25-point win only nudges &ldquo;cement&rdquo; into first place by <b>'+cementGapPts.toFixed(2)+' pts</b> over &ldquo;run&rdquo;. Generalizing correctly doesn&rsquo;t mean generalizing identically.';
 
   function pm(name, M, d){ return matbox(name, M, {d:d===undefined?3:d}); }
 
