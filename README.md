@@ -66,6 +66,7 @@ approximate a real model's behavior.
 |---|---|---|
 | **Interactive web demo** | The main thing to share and click through. Zero-install, runs entirely in the browser. Sliders for learning rate and one embedding value, a training-step toggle, a live probability readout, a "Show the maths" panel exposing every matrix, and a "Paper Mode" 9-step worksheet walkthrough. | `Web/index.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/)) |
 | **Full notebook, statically rendered** | Every derivation Mathematica computed, laid out as one linear, no-install page — for a reader who wants to see the whole worked argument (not just play with sliders) without needing Mathematica or Wolfram Player installed. Not interactive; the web demo above covers that. | `Web/notebook.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/notebook.html)) |
+| **LoRA companion, statically rendered** | Same treatment as the row above, for the LoRA companion notebook: freeze `W_Out`, train `ΔW = B·A`, and see the full step-by-step comparison against full fine-tuning. | `Web/lora-notebook.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/lora-notebook.html)) |
 | **Mathematica notebook** | The source of mathematical truth, and the only way to actually re-evaluate every cell yourself. Every operation — embedding lookup, Q/K/V, scaled dot-product attention, causal masking, softmax, cross-entropy, the gradient, gradient descent — derived and displayed explicitly, plus an automated 34-check verification suite. Requires Mathematica or (free) Wolfram Player. | `Mathematica/TinyTransformerByHand.nb`, `Mathematica/TinyTransformerByHand.wl` |
 | **Hand-calculation worksheet** | Paper and a calculator. Given values, fill-in-the-blank steps, and an answer key. | `calculations/HAND_CALCULATION.md` |
 
@@ -104,6 +105,7 @@ not just caught up to one step of full fine-tuning — it has overtaken it,
 while never touching more than 8 of `W_Out`'s effective parameters.
 
 21/21 automated checks pass — see `Mathematica/TinyLoRAByHand.wl`.
+**[Read it as a static, no-install web page →](https://djimrastephane.github.io/tiny-transformer-by-hand/lora-notebook.html)**
 Source: `Mathematica/TinyLoRAByHand.nb`,
 `Mathematica/TinyLoRAByHand.wl`,
 `calculations/LORA_HAND_CALCULATION.md`.
@@ -122,9 +124,12 @@ tiny-transformer-by-hand/
         TinyTransformerByHand.wl  - standalone reference implementation + RunAllChecks[] verification suite
         TinyLoRAByHand.nb         - companion notebook: freeze W_Out, train a rank-1 correction instead
         TinyLoRAByHand.wl         - LoRA reference implementation + RunLoRAChecks[] verification suite
+        ExportNotebookValues.wls  - exports notebook_values.json for Web/build_notebook.py
+        ExportLoRAValues.wls      - exports lora_values.json for Web/build_lora_notebook.py
     Web/
         index.html                - the interactive browser demo (self-contained, no build step)
         notebook.html             - the full notebook, statically rendered (no install, not interactive)
+        lora-notebook.html        - the LoRA companion notebook, statically rendered (no install, not interactive)
     calculations/
         HAND_CALCULATION.md       - paper-and-calculator worksheet with an answer key
         LORA_HAND_CALCULATION.md  - paper-and-calculator worksheet for the LoRA companion, answer key included
@@ -173,24 +178,28 @@ what the one worked training step does and does not update (only `W_Out`
 
 ## Running the web demo
 
-`Web/index.html` and `Web/notebook.html` are both single, self-contained
-files — no build step, no dependencies beyond one Google Fonts
-stylesheet link, no server required:
+`Web/index.html`, `Web/notebook.html`, and `Web/lora-notebook.html` are
+all single, self-contained files — no build step, no dependencies
+beyond one Google Fonts stylesheet link, no server required:
 
-- **Locally:** just open either file in any modern browser.
+- **Locally:** just open any of the three files in a modern browser.
 - **Live on GitHub Pages:** [djimrastephane.github.io/tiny-transformer-by-hand](https://djimrastephane.github.io/tiny-transformer-by-hand/)
-  (interactive demo) and
+  (interactive demo),
   [.../notebook.html](https://djimrastephane.github.io/tiny-transformer-by-hand/notebook.html)
-  (static notebook) — no server-side compute, everything runs
+  (static notebook), and
+  [.../lora-notebook.html](https://djimrastephane.github.io/tiny-transformer-by-hand/lora-notebook.html)
+  (static LoRA companion) — no server-side compute, everything runs
   client-side. Deployment is automatic: `.github/workflows/pages.yml`
   redeploys the whole `Web/` folder to Pages on every push that touches
-  it, so editing either file and pushing to `main` is the entire release
-  process.
+  it, so editing any of these files and pushing to `main` is the entire
+  release process.
 
-`notebook.html` is generated from Mathematica's own computed values
-(exported as JSON, never hand-retyped) by
-`Web/build_notebook.py` — see that script if you change the notebook
-and need to regenerate this page.
+`notebook.html` and `lora-notebook.html` are generated from
+Mathematica's own computed values (exported as JSON, never hand-retyped)
+by `Web/build_notebook.py` and `Web/build_lora_notebook.py` respectively
+— see those scripts (and `Mathematica/ExportNotebookValues.wls` /
+`ExportLoRAValues.wls`) if you change either notebook and need to
+regenerate its page.
 
 ## Running the Mathematica notebook
 

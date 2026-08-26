@@ -487,6 +487,7 @@ html = f"""<meta charset="utf-8">
     &middot; <a href="./index.html">Live demo</a>
     &middot; <a href="https://github.com/djimrastephane/tiny-transformer-by-hand/blob/main/Mathematica/TinyTransformerByHand.nb">Source notebook</a>
     &middot; <a href="https://github.com/djimrastephane/tiny-transformer-by-hand/blob/main/methodology/ASSUMPTIONS.md">Methodology</a></p>
+    <p>Companion page: <a href="./lora-notebook.html">Tiny LoRA, By Hand</a> &mdash; freezes W<sub>Out</sub> and trains a rank-1 correction instead of updating it directly.</p>
     <p>This is a toy transformer language model built for transparency, not a large language model and not a reproduction of ChatGPT or any production system.</p>
   </footer>
 
