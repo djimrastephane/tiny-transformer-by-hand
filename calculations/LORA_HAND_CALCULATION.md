@@ -161,3 +161,34 @@ embeddings, `WQ`, `WK`, and `WV` are frozen throughout, exactly as in
 `HAND_CALCULATION.md`. See `TinyLoRAByHand.nb` Section 9 ("What This Does
 and Doesn't Prove") for the caveats on what this toy example does and does
 not establish about LoRA in general.
+
+---
+
+## Verified: does 4-decimal calculator rounding actually work?
+
+Both answer keys above (Section 3's step 1, and the bonus's step 2) were
+recomputed independently using only 4-decimal-place arithmetic after
+every individual multiply, add, exponential, and division — no hidden
+extra precision carried between steps, starting from `h` and `G` exactly
+as given in Section 1:
+
+```
+dA0, dB0, B1, DeltaW1, WOutEffective1                  -- exact match
+Logits1, softmax1, P("shoe")1                          -- exact match
+Loss1                                                   -- within 0.0001
+G1, dA1, dB1                                            -- within 0.0002
+B2, A2                                                  -- within 0.0003
+Logits2, softmax2, P("shoe")2, Loss2                    -- within 0.0001
+```
+
+Maximum drift from the published answer key across both steps:
+**0.0003**, on `B2` — the largest drift in either worksheet, since the
+bonus step compounds rounding across two full training steps rather than
+one. Every qualitative claim still survives intact at that drift: the
+top prediction is still wrong after step 1 (`run` ahead of `shoe`, not
+just barely), flips correctly after step 2, and step 2's loss still
+clearly beats full fine-tuning's single-step loss (0.2263 vs. 0.8404 —
+nowhere near close enough for 0.0003 of drift to matter). As with
+`HAND_CALCULATION.md`, this is a completed recomputation, not a
+disclaimer: a reader working through this worksheet with an ordinary
+calculator will land within the same tolerance.

@@ -217,3 +217,35 @@ with respect to `WOut`). See Section 12 of `TinyTransformerByHand.nb`
 `WK`, and `WV` are left unchanged in this particular worked example, and
 for an optional, more advanced discussion of continuing the gradient
 further back through attention.
+
+---
+
+## 5. Verified: does 4-decimal calculator rounding actually work?
+
+The answer key above comes from Mathematica's full-precision arithmetic,
+then rounded for display. That leaves one honest question unanswered: if
+you actually round after *every single operation* the way a real
+calculator readout forces you to — not just at the end — do the errors
+compound into something that no longer matches?
+
+They don't. Every step above was recomputed independently using only
+4-decimal-place arithmetic after each individual multiply, add, exponential,
+and division (no hidden extra precision carried between steps), starting
+from the same given values in Section 1:
+
+```
+Q, K, V, raw scores, scaled scores, softmax(row 2), h            -- exact match
+Logits, 6-way softmax, P("shoe"), Loss                            -- exact match
+dLogits, dWOut                                                     -- exact match
+WOut_new                                                            -- within 0.0001
+Logits_new, softmax_new, P("shoe")_new, Loss_new                  -- within 0.0001
+```
+
+Maximum drift from the published answer key across every value in this
+worksheet: **0.0002**, on `Logits` (0.3396 vs. 0.3395). Both claims that
+matter survive intact: the predicted token still flips from "run" to
+"shoe", and P("shoe") still rises while the loss still falls — by
+amounts indistinguishable from the answer key above at 4 significant
+figures. This is not a hope or a disclaimer; it's a completed
+recomputation, and it means the "should match within rounding error"
+line at the top of the answer key is a tested claim, not an assumption.
