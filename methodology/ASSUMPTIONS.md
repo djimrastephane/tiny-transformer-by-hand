@@ -109,8 +109,9 @@ decisive ~25-point win. That gap is exactly what gradient descent
 predicts: the same size of step covers proportionally less ground when
 there's further to go. Verified via
 `` TinyTransformerByHand`RunAlternateTargetChecks["cement"] `` in
-`TinyTransformerByHand.wl`, run automatically alongside the main
-27-check suite in the notebook's Appendix A.
+`TinyTransformerByHand.wl` (7 checks), run automatically alongside the
+main 27-check `RunAllChecks[]` suite in the notebook's Appendix A —
+27 + 7 = the 34/34 total in the README badge.
 
 ## Companion project: LoRA, and its own extra assumptions
 
@@ -156,9 +157,11 @@ dimensions, softmax rows summing to 1, correct causal-mask behavior,
 correct target-probability extraction, correct cross-entropy, correct
 gradient sign, and — the two claims the whole demonstration depends on
 — that P("shoe") increases and the loss decreases after the one
-training update. The browser demo (`Web/index.html`) reimplements the
-same equations directly in JavaScript from those already-verified
-values; it does not re-derive or independently estimate anything.
+training update. Run alongside `` RunAlternateTargetChecks["cement"] ``
+(7 more checks, see above), that's the 34/34 total in the README badge.
+The browser demo (`Web/index.html`) reimplements the same equations
+directly in JavaScript from those already-verified values; it does not
+re-derive or independently estimate anything.
 
 ## What this project is not claiming
 

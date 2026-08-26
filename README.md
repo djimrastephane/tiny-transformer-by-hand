@@ -215,7 +215,10 @@ regenerate its page.
    terminal inside `Mathematica/`:
    `wolframscript -code 'Get["TinyTransformerByHand.wl"]; TinyTransformerByHand`RunAllChecks[]'`
    — it prints a pass/fail line for every mathematical property this
-   project depends on (currently: 27/27 passing).
+   project depends on (27/27 passing). The notebook's Appendix A runs
+   this suite plus `` TinyTransformerByHand`RunAlternateTargetChecks["cement"] ``
+   (7 more checks, for the "Bonus: does this generalize?" section) —
+   27 + 7 = the 34/34 total in the badge at the top of this README.
 
 Built and verified against **Wolfram Language 15.0.1**; it uses only
 long-stable language features (`MatrixForm`, `Grid`, `BarChart`,
