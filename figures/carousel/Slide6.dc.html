@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    a{ color:#45C7B8; } a:hover{ color:#6fd9cc; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 64px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:64px; line-height:1.1; color:#F3F6FC; margin:30px 0 40px; max-width:840px; text-wrap:balance;
+    }
+
+    .compare{
+      display:grid; grid-template-columns:1fr 1fr; gap:1px;
+      background:#263353; border:1px solid #263353; border-radius:12px; overflow:hidden;
+      margin-bottom:34px;
+    }
+    .compare > div{ background:#131A2B; padding:34px 32px; }
+    .compare .cap{ font-family:"IBM Plex Mono", monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:22px; }
+    .compare .after .cap{ color:#5FD08A; }
+    .metric{ display:flex; justify-content:space-between; align-items:baseline; padding:14px 0; border-bottom:1px solid #1B2540; }
+    .metric:last-child{ border-bottom:none; }
+    .metric .k{ font-size:24px; color:#8592AC; }
+    .metric .v{ font-family:"IBM Plex Mono", monospace; font-size:38px; color:#E7ECF5; }
+    .compare .after .v{ color:#5FD08A; }
+    .compare .before .v.wrong{ color:#E2604F; }
+
+    .arrowband{
+      grid-column:1/-1; background:#182238; padding:18px 32px;
+      font-family:"IBM Plex Mono", monospace; font-size:24px; color:#E8A33D; text-align:center; font-weight:600;
+    }
+
+    .payoff{ font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700; font-size:42px; color:#E7ECF5; margin:8px 0 0; text-wrap:balance; }
+    .payoff .em{ color:#E8A33D; }
+
+    .cta{ margin-top:auto; padding-top:28px; border-top:1px solid #263353; font-size:24px; color:#8592AC; }
+    .cta-link{ font-family:"IBM Plex Mono", monospace; font-size:23px; color:#45C7B8; margin-top:10px; display:block; word-break:break-all; }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">One Update Later</span>
+    <span class="slidecount">06 / 07</span>
+  </div>
+
+  <h1 class="headline">Same input. Different answer.</h1>
+
+  <div class="compare">
+    <div class="before">
+      <div class="cap">Before training</div>
+      <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v mono">20.1%</span></div>
+      <div class="metric"><span class="k">Loss</span><span class="v mono">1.6035</span></div>
+      <div class="metric"><span class="k">Top guess</span><span class="v mono wrong">RUN</span></div>
+    </div>
+    <div class="after">
+      <div class="cap">After 1 update</div>
+      <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v mono">43.2%</span></div>
+      <div class="metric"><span class="k">Loss</span><span class="v mono">0.8404</span></div>
+      <div class="metric"><span class="k">Top guess</span><span class="v mono">SHOE</span></div>
+    </div>
+    <div class="arrowband">P(shoe) &nbsp;+23.1 pts&nbsp; &middot; &nbsp;Loss &minus;0.7631&nbsp; &middot; &nbsp;one gradient-descent step</div>
+  </div>
+
+  <p class="payoff">Those numbers changed because <span class="em">these weights</span> changed &mdash; and you can compute every one of them yourself.</p>
+
+  <div class="cta">Full worked notebook, hand-calculation worksheet, and a live browser demo you can train yourself:
+    <a class="cta-link" href="https://claude.ai/code/artifact/686ca801-70dc-49aa-9526-50c9d2143bb8">claude.ai/code/artifact/686ca801-70dc-49aa-9526-50c9d2143bb8</a>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 60px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:58px; line-height:1.12; color:#F3F6FC; margin:30px 0 40px; max-width:840px; text-wrap:balance;
+    }
+    .headline .amber{ color:#E8A33D; }
+
+    .section-label{ font-family:"IBM Plex Mono", monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; color:#8592AC; margin-bottom:14px; }
+
+    .lossbox{
+      background:#131A2B; border:1px solid #263353; border-radius:10px;
+      padding:28px 32px; margin-bottom:40px;
+    }
+    .lossbox .eq{ font-family:"IBM Plex Mono", monospace; font-size:34px; color:#E7ECF5; }
+    .lossbox .eq .val{ color:#E8A33D; font-weight:600; }
+    .lossbox .eq2{ font-family:"IBM Plex Mono", monospace; font-size:44px; color:#E8A33D; font-weight:600; margin-top:10px; }
+
+    .gradrow{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .gcell{
+      font-family:"IBM Plex Mono", monospace; font-size:26px;
+      background:#131A2B; border:1px solid #263353; border-radius:6px;
+      padding:14px 18px; min-width:120px; text-align:center;
+    }
+    .gcell .t{ font-size:15px; color:#5B6784; text-transform:uppercase; letter-spacing:0.06em; display:block; margin-bottom:6px; }
+    .gcell .n{ color:#E7ECF5; }
+    .gcell.neg{ border-color:#7A5A28; }
+    .gcell.neg .n{ color:#E8A33D; font-weight:600; }
+
+    .note{ font-size:26px; color:#8592AC; margin:8px 0 40px; max-width:64ch; line-height:1.5; }
+    .note b{ color:#E7ECF5; }
+
+    .updaterule{
+      background:#182238; border:1px solid #263353; border-radius:10px;
+      padding:30px 34px; margin-top:auto;
+    }
+    .updaterule .eq{ font-family:"IBM Plex Mono", monospace; font-size:38px; color:#E7ECF5; }
+    .updaterule .eq .lr{ color:#45C7B8; }
+    .updaterule p{ font-size:22px; color:#5B6784; margin:12px 0 0; }
+
+    .pipe{ margin-top:34px; padding-top:26px; border-top:1px solid #263353; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .pipe .stage{ font-family:"IBM Plex Mono", monospace; font-size:17px; letter-spacing:0.07em; text-transform:uppercase; color:#2E374F; }
+    .pipe .stage.done{ color:#2F6E66; }
+    .pipe .stage.current{ color:#E8A33D; font-weight:600; }
+    .pipe .sep{ color:#263353; font-size:16px; }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">Teach It The Answer</span>
+    <span class="slidecount">05 / 07</span>
+  </div>
+
+  <h1 class="headline">Tell it the correct answer is <span class="amber">&ldquo;shoe.&rdquo;</span></h1>
+
+  <div class="section-label">Cross-entropy loss</div>
+  <div class="lossbox">
+    <div class="eq">Loss = &minus;ln( P(&ldquo;shoe&rdquo;) ) = &minus;ln( <span class="val">0.201</span> )</div>
+    <div class="eq2">Loss = 1.6035</div>
+  </div>
+
+  <div class="section-label">Gradient &mdash; how each logit should move</div>
+  <div class="gradrow">
+    <div class="gcell"><span class="t">&lt;BOS&gt;</span><span class="n">+0.143</span></div>
+    <div class="gcell"><span class="t">run</span><span class="n">+0.280</span></div>
+    <div class="gcell"><span class="t">casing</span><span class="n">+0.199</span></div>
+    <div class="gcell neg"><span class="t">shoe</span><span class="n">&minus;0.799</span></div>
+    <div class="gcell"><span class="t">cement</span><span class="n">+0.073</span></div>
+  </div>
+  <p class="note">Every token except <b>&ldquo;shoe&rdquo;</b> has a positive gradient (raising its logit would raise the loss). Only shoe is negative &mdash; the one direction that lowers it.</p>
+
+  <div class="updaterule">
+    <div class="eq">W<sub>new</sub> = W<sub>old</sub> &minus; <span class="lr">lr</span> &middot; gradient</div>
+    <p>One number, subtracted the right amount from every weight, in the direction the gradient says will help.</p>
+  </div>
+
+  <div class="pipe">
+    <span class="stage done">TOKENS</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">EMBED</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">Q &middot; K &middot; V</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">ATTENTION</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">LOGITS</span><span class="sep">&rsaquo;</span>
+    <span class="stage current">LOSS</span><span class="sep">&rsaquo;</span>
+    <span class="stage">UPDATE</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    a{ color:#45C7B8; } a:hover{ color:#6fd9cc; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 72px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .hook{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:34px; max-width:900px; }
+    .eyebrow{ font-family:"IBM Plex Mono", monospace; font-size:24px; letter-spacing:0.1em; color:#8592AC; text-transform:uppercase; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:92px; line-height:1.05; color:#F3F6FC; margin:0; text-wrap:balance;
+    }
+    .headline .amber{ color:#E8A33D; }
+    .sub{ font-size:32px; color:#8592AC; margin:0; max-width:34ch; line-height:1.4; }
+    .sub b{ color:#E7ECF5; font-weight:600; }
+
+    .teaser{ display:flex; align-items:center; gap:18px; margin-top:12px; }
+    .chip{
+      font-family:"IBM Plex Mono", monospace; font-weight:500; font-size:26px;
+      background:#131A2B; border:1px solid #263353; border-radius:6px;
+      padding:16px 22px; color:#E7ECF5;
+    }
+    .chip.amber{ border-color:#7A5A28; color:#E8A33D; }
+    .teaser-arrow{ color:#3A4260; font-size:30px; }
+
+    .brandline{
+      margin-top:auto; padding-top:32px; border-top:1px solid #263353;
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
+    }
+    .brandline .badge{
+      border:1px solid #263353; border-radius:4px; padding:8px 14px; color:#8592AC; font-size:18px;
+    }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">Tiny Transformer &mdash; By Hand</span>
+    <span class="slidecount">01 / 07</span>
+  </div>
+
+  <div class="hook">
+    <span class="eyebrow">A worked example, not a metaphor</span>
+    <h1 class="headline">Can you train a<br>transformer with a<br><span class="amber">calculator?</span></h1>
+    <p class="sub">A 6-word vocabulary. 2-number embeddings. One attention head.<br><b>Every step computed by hand.</b></p>
+
+    <div class="teaser">
+      <span class="chip">RUN CASING</span>
+      <span class="teaser-arrow">&rarr;</span>
+      <span class="chip">ATTENTION</span>
+      <span class="teaser-arrow">&rarr;</span>
+      <span class="chip amber">SHOE?</span>
+    </div>
+  </div>
+
+  <div class="brandline">
+    <span>drilling / completions example</span>
+    <span class="badge">toy model &middot; not an LLM</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 60px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:54px; line-height:1.12; color:#F3F6FC; margin:30px 0 36px; max-width:840px; text-wrap:balance;
+    }
+    .headline .amber{ color:#E8A33D; }
+
+    .flowrow{ display:flex; align-items:center; gap:18px; margin-bottom:26px; }
+    .op{ color:#5B6784; font-size:34px; }
+    .matbox{
+      display:inline-grid; gap:6px 22px;
+      font-family:"IBM Plex Mono", monospace; font-size:30px;
+      background:#131A2B; border:1px solid #263353; border-radius:8px;
+      padding:16px 22px;
+    }
+    .matbox .mname{ grid-column:1/-1; font-size:16px; letter-spacing:0.1em; text-transform:uppercase; color:#5B6784; margin-bottom:2px; }
+    .matbox .cell{ text-align:right; min-width:1.3em; color:#E7ECF5; }
+    .matbox.result{ border-color:#7A5A28; }
+    .matbox.result .cell{ color:#E8A33D; font-weight:600; }
+
+    .note{ font-size:24px; color:#5B6784; margin:6px 0 0; max-width:64ch; line-height:1.5; }
+    .note b{ color:#8592AC; }
+    .caveat{
+      font-family:"IBM Plex Mono", monospace;
+      font-size:19px; color:#5B6784; margin-top:18px; max-width:66ch; line-height:1.6;
+    }
+    .caveat .tag{ color:#45C7B8; letter-spacing:0.06em; }
+
+    .pipe{ margin-top:auto; padding-top:26px; border-top:1px solid #263353; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .pipe .stage{ font-family:"IBM Plex Mono", monospace; font-size:17px; letter-spacing:0.07em; text-transform:uppercase; color:#2E374F; }
+    .pipe .stage.done{ color:#2F6E66; }
+    .pipe .stage.current{ color:#E8A33D; font-weight:600; }
+    .pipe .sep{ color:#263353; font-size:16px; }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">The Input</span>
+    <span class="slidecount">03 / 07</span>
+  </div>
+
+  <h1 class="headline">&ldquo;run casing&rdquo; becomes<br>three matrices: <span class="amber">Q, K, V.</span></h1>
+
+  <div class="flowrow">
+    <div class="matbox"><div class="mname">X (run, casing)</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+    <span class="op">&middot;</span>
+    <div class="matbox"><div class="mname">W_Q</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">1</div><div class="cell">1</div>
+    </div>
+    <span class="op">=</span>
+    <div class="matbox result"><div class="mname">Q</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">1</div><div class="cell">1</div>
+    </div>
+  </div>
+
+  <div class="flowrow">
+    <div class="matbox"><div class="mname">X</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+    <span class="op">&middot;</span>
+    <div class="matbox"><div class="mname">W_K</div>
+      <div class="cell">1</div><div class="cell">1</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+    <span class="op">=</span>
+    <div class="matbox result"><div class="mname">K</div>
+      <div class="cell">1</div><div class="cell">1</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+  </div>
+
+  <div class="flowrow">
+    <div class="matbox"><div class="mname">X</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+    <span class="op">&middot;</span>
+    <div class="matbox"><div class="mname">W_V</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+    <span class="op">=</span>
+    <div class="matbox result"><div class="mname">V</div>
+      <div class="cell">1</div><div class="cell">0</div><div class="cell">0</div><div class="cell">1</div>
+    </div>
+  </div>
+
+  <p class="note">Three ordinary 2&times;2 matrix multiplications &mdash; <b>nothing more</b>. Row 1 is &ldquo;run&rdquo;, row 2 is &ldquo;casing&rdquo;.</p>
+
+  <p class="caveat"><span class="tag">note</span> &mdash; Q = W_Q here only because these two embeddings form the identity matrix. Feed different tokens in and Q changes; Q, K, V are computed from the input, not fixed.</p>
+
+  <div class="pipe">
+    <span class="stage done">TOKENS</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">EMBED</span><span class="sep">&rsaquo;</span>
+    <span class="stage current">Q &middot; K &middot; V</span><span class="sep">&rsaquo;</span>
+    <span class="stage">ATTENTION</span><span class="sep">&rsaquo;</span>
+    <span class="stage">LOGITS</span><span class="sep">&rsaquo;</span>
+    <span class="stage">LOSS</span><span class="sep">&rsaquo;</span>
+    <span class="stage">UPDATE</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 72px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:60px; line-height:1.1; color:#F3F6FC; margin:34px 0 44px; max-width:820px; text-wrap:balance;
+    }
+
+    .spec{
+      display:grid; grid-template-columns: 1fr auto; row-gap:0; column-gap:32px;
+      background:#131A2B; border:1px solid #263353; border-radius:10px;
+      padding:8px 40px;
+    }
+    .spec .row{ display:contents; }
+    .spec .k{
+      font-family:"IBM Plex Sans", sans-serif; font-size:28px; color:#8592AC;
+      padding:26px 0; border-bottom:1px solid #1B2540;
+    }
+    .spec .v{
+      font-family:"IBM Plex Mono", monospace; font-size:32px; font-weight:600; color:#E8A33D;
+      padding:26px 0; border-bottom:1px solid #1B2540; text-align:right;
+    }
+    .spec .row:last-child .k, .spec .row:last-child .v{ border-bottom:none; }
+
+    .note{ font-size:26px; color:#5B6784; margin-top:30px; max-width:60ch; line-height:1.5; }
+    .note b{ color:#8592AC; }
+
+    .brandline{
+      margin-top:auto; padding-top:32px; border-top:1px solid #263353;
+      display:flex; justify-content:space-between; align-items:center;
+      font-family:"IBM Plex Mono", monospace; font-size:20px; color:#5B6784; letter-spacing:0.03em;
+    }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">The Model</span>
+    <span class="slidecount">02 / 07</span>
+  </div>
+
+  <h1 class="headline">Deliberately, aggressively tiny.</h1>
+
+  <div class="spec">
+    <div class="row"><div class="k">Vocabulary</div><div class="v">6 tokens</div></div>
+    <div class="row"><div class="k">Embedding dimension</div><div class="v">2</div></div>
+    <div class="row"><div class="k">Attention heads</div><div class="v">1</div></div>
+    <div class="row"><div class="k">Transformer blocks</div><div class="v">1</div></div>
+    <div class="row"><div class="k">Parameters</div><div class="v">~40</div></div>
+    <div class="row"><div class="k">Training examples</div><div class="v">1</div></div>
+  </div>
+
+  <p class="note">Small enough that <b>every matrix multiplication fits on a sheet of paper</b> &mdash; and the mechanics are exactly the ones inside a real transformer.</p>
+
+  <div class="brandline">
+    <span>run casing &rarr; shoe</span>
+    <span>tiny-transformer-by-hand</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

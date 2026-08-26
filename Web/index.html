@@ -1,0 +1,890 @@
+<title>Tiny Transformer, By Hand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0B0F1A;
+    --panel:#131A2B;
+    --panel-raised:#182238;
+    --line:#263353;
+    --line-soft:#1B2540;
+    --text:#E7ECF5;
+    --text-dim:#8592AC;
+    --text-faint:#5B6784;
+    --amber:#E8A33D;
+    --amber-dim:#7A5A28;
+    --teal:#45C7B8;
+    --teal-dim:#255650;
+    --bad:#E2604F;
+    --good:#5FD08A;
+    --paper-bg:#EDE7D9;
+    --paper-ink:#1B1710;
+    --paper-rule:#c9bfa1;
+    --focus:#7FC9FF;
+    --shadow: 0 8px 30px rgba(0,0,0,0.35);
+  }
+
+  :root[data-theme="light"], :root:not([data-theme="dark"]) {
+    --bg:#EDF0F5;
+    --panel:#FFFFFF;
+    --panel-raised:#F6F8FC;
+    --line:#C9D2E2;
+    --line-soft:#DCE3EE;
+    --text:#121826;
+    --text-dim:#51617D;
+    --text-faint:#8A97B2;
+    --amber:#9A5F00;
+    --amber-dim:#E7CDA0;
+    --teal:#0E7A70;
+    --teal-dim:#BFE7E1;
+    --bad:#B23A2C;
+    --good:#177A47;
+    --paper-bg:#FBF8F0;
+    --paper-ink:#1B1710;
+    --paper-rule:#d8cfae;
+    --focus:#0B63C5;
+    --shadow: 0 8px 24px rgba(30,40,70,0.12);
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0B0F1A;
+      --panel:#131A2B;
+      --panel-raised:#182238;
+      --line:#263353;
+      --line-soft:#1B2540;
+      --text:#E7ECF5;
+      --text-dim:#8592AC;
+      --text-faint:#5B6784;
+      --amber:#E8A33D;
+      --amber-dim:#7A5A28;
+      --teal:#45C7B8;
+      --teal-dim:#255650;
+      --bad:#E2604F;
+      --good:#5FD08A;
+      --focus:#7FC9FF;
+      --shadow: 0 8px 30px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"]{
+    --bg:#0B0F1A;
+    --panel:#131A2B;
+    --panel-raised:#182238;
+    --line:#263353;
+    --line-soft:#1B2540;
+    --text:#E7ECF5;
+    --text-dim:#8592AC;
+    --text-faint:#5B6784;
+    --amber:#E8A33D;
+    --amber-dim:#7A5A28;
+    --teal:#45C7B8;
+    --teal-dim:#255650;
+    --bad:#E2604F;
+    --good:#5FD08A;
+    --focus:#7FC9FF;
+    --shadow: 0 8px 30px rgba(0,0,0,0.35);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"IBM Plex Sans", system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  ::selection{ background:var(--amber); color:#191203; }
+  a{ color:var(--teal); }
+  a:focus-visible, button:focus-visible, input:focus-visible, .switch button:focus-visible{
+    outline:2px solid var(--focus);
+    outline-offset:2px;
+  }
+
+  h1,h2,h3{
+    font-family:"IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    text-wrap:balance;
+    margin:0;
+  }
+  .num, .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+
+  .wrap{
+    max-width:920px;
+    margin:0 auto;
+    padding:28px 20px 80px;
+  }
+
+  /* ---------- header ---------- */
+  header.top{
+    display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+    padding-bottom:18px; margin-bottom:22px;
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:4px; }
+  .brand .kicker{
+    font-size:0.7rem; letter-spacing:0.16em; color:var(--text-faint); text-transform:uppercase;
+  }
+  .brand h1{ font-size:1.5rem; color:var(--text); }
+  .badge{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:0.68rem; letter-spacing:0.05em;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:5px 9px;
+    white-space:nowrap;
+  }
+
+  section{ margin-bottom:36px; }
+  .section-label{
+    font-size:0.72rem; letter-spacing:0.14em; color:var(--teal); text-transform:uppercase;
+    margin-bottom:10px; display:flex; align-items:center; gap:8px;
+  }
+  .section-label .tick{ width:14px; height:1px; background:var(--teal); display:inline-block; }
+
+  p.lede{ color:var(--text-dim); max-width:62ch; }
+
+  /* ---------- panel shell ---------- */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    box-shadow:var(--shadow);
+  }
+  .panel-pad{ padding:20px; }
+
+  /* ---------- pipeline / hero ---------- */
+  .pipeline{
+    display:grid;
+    grid-template-columns: 1fr auto 1.1fr auto 1.4fr;
+    align-items:center;
+    gap:10px;
+    padding:22px;
+  }
+  @media (max-width:720px){
+    .pipeline{ grid-template-columns: 1fr; }
+    .pipeline .arrow{ transform:rotate(90deg); margin:2px auto; }
+  }
+  .stage{ display:flex; flex-direction:column; gap:8px; align-items:stretch; }
+  .stage .stage-title{
+    font-size:0.66rem; letter-spacing:0.12em; color:var(--text-faint); text-transform:uppercase;
+  }
+  .arrow{ color:var(--line); font-size:1.1rem; text-align:center; }
+
+  .tokens{ display:flex; gap:8px; }
+  .token-chip{
+    font-family:"IBM Plex Mono", monospace;
+    font-weight:500;
+    background:var(--panel-raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:10px 6px;
+    text-align:center;
+    flex:1;
+    font-size:0.82rem;
+    color:var(--text);
+  }
+
+  .attn-grid{
+    display:grid; grid-template-columns: auto 1fr 1fr; gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:0.72rem;
+  }
+  .attn-grid > div{ background:var(--panel); padding:8px 6px; text-align:center; color:var(--text-dim); }
+  .attn-grid .corner{ background:var(--panel-raised); }
+  .attn-grid .rowhead{ background:var(--panel-raised); color:var(--text-dim); text-align:left; padding-left:8px; }
+  .attn-cell{ position:relative; color:var(--text); font-weight:500; }
+  .attn-cell .fill{
+    position:absolute; inset:0; background:var(--teal); opacity:var(--w, 0);
+    z-index:0;
+  }
+  .attn-cell span{ position:relative; z-index:1; }
+  .attn-caption{ font-size:0.68rem; color:var(--text-faint); }
+
+  .next-token-mini{ display:flex; flex-direction:column; gap:6px; }
+  .mini-bar-row{ display:grid; grid-template-columns: 56px 1fr 42px; align-items:center; gap:8px; font-size:0.72rem; }
+  .mini-bar-row .label{ color:var(--text-dim); font-family:"IBM Plex Mono",monospace; text-align:right; }
+  .mini-bar-track{ background:var(--line-soft); border-radius:3px; height:9px; overflow:hidden; }
+  .mini-bar-fill{ height:100%; background:var(--text-faint); border-radius:3px 0 0 3px; }
+  .mini-bar-fill.target{ background:var(--amber); }
+  .mini-bar-row .pct{ font-family:"IBM Plex Mono",monospace; color:var(--text-dim); text-align:right; }
+
+  /* ---------- controls ---------- */
+  .controls-grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:18px;
+  }
+  @media (max-width:720px){ .controls-grid{ grid-template-columns:1fr; } }
+  .control{ display:flex; flex-direction:column; gap:10px; }
+  .control .control-label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:0.72rem; letter-spacing:0.06em; color:var(--text-dim); text-transform:uppercase;
+  }
+  .control .control-value{ font-family:"IBM Plex Mono", monospace; color:var(--amber); font-size:0.82rem; }
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:4px; border-radius:2px;
+    background:linear-gradient(to right, var(--teal) var(--pct,50%), var(--line-soft) var(--pct,50%));
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:16px; height:16px; border-radius:50%;
+    background:var(--bg); border:2px solid var(--teal);
+    cursor:pointer; margin-top:0;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%;
+    background:var(--bg); border:2px solid var(--teal); cursor:pointer;
+  }
+
+  .switch{
+    display:inline-flex; border:1px solid var(--line); border-radius:5px; overflow:hidden; width:fit-content;
+  }
+  .switch button{
+    font-family:"IBM Plex Mono", monospace; font-size:0.78rem;
+    background:var(--panel-raised); color:var(--text-dim);
+    border:none; padding:9px 18px; cursor:pointer;
+  }
+  .switch button.on{ background:var(--amber); color:#1a1204; font-weight:600; }
+  .switch button:not(.on):hover{ color:var(--text); }
+
+  /* ---------- probability track ---------- */
+  .track-row{
+    display:grid; grid-template-columns: 78px 1fr 64px; align-items:center; gap:12px;
+    padding:7px 0;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .track-row:last-child{ border-bottom:none; }
+  .track-row .tname{
+    font-family:"IBM Plex Mono", monospace; font-size:0.78rem; color:var(--text-dim);
+  }
+  .track-row.is-target .tname{ color:var(--amber); font-weight:600; }
+  .track{ position:relative; height:16px; background:var(--line-soft); border-radius:3px; overflow:hidden; }
+  .track-fill{ position:absolute; left:0; top:0; bottom:0; background:var(--text-faint); border-radius:3px 0 0 3px; transition:width 0.25s ease; }
+  .track-row.is-target .track-fill{ background:var(--amber); }
+  .track-row.is-predicted .track-fill{ box-shadow: inset 0 0 0 2px var(--teal); }
+  .track-pct{ font-family:"IBM Plex Mono", monospace; font-size:0.8rem; text-align:right; }
+  .legend{ display:flex; gap:18px; margin-top:12px; font-size:0.7rem; color:var(--text-faint); flex-wrap:wrap; }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+
+  /* ---------- before/after ---------- */
+  .compare{
+    display:grid; grid-template-columns: 1fr 1fr; gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .compare > div{ background:var(--panel); padding:18px; }
+  .compare .cap{ font-size:0.68rem; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px; }
+  .compare .metric{ display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; }
+  .compare .metric .k{ color:var(--text-dim); font-size:0.82rem; }
+  .compare .metric .v{ font-family:"IBM Plex Mono", monospace; font-size:1.05rem; }
+  .compare .after .v{ color:var(--good); }
+  .delta-row{
+    grid-column:1 / -1; background:var(--panel-raised); padding:12px 18px;
+    display:flex; gap:22px; flex-wrap:wrap; font-family:"IBM Plex Mono", monospace; font-size:0.78rem; color:var(--text-dim);
+  }
+  .delta-row b{ color:var(--good); }
+
+  /* ---------- show the maths ---------- */
+  .disclose{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; overflow:hidden;
+  }
+  .disclose > summary{
+    list-style:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; font-family:"IBM Plex Sans Condensed", sans-serif;
+    text-transform:uppercase; letter-spacing:0.05em; font-weight:600; font-size:0.9rem;
+    color:var(--text);
+  }
+  .disclose > summary::-webkit-details-marker{ display:none; }
+  .disclose > summary .chev{ color:var(--teal); transition:transform 0.2s ease; font-family:"IBM Plex Mono",monospace;}
+  .disclose[open] > summary .chev{ transform:rotate(90deg); }
+  .disclose .maths-body{ padding:0 20px 22px; border-top:1px solid var(--line-soft); }
+
+  .maths-section{ margin-top:20px; }
+  .maths-section h3{ font-size:0.8rem; color:var(--teal); margin-bottom:10px; letter-spacing:0.06em; }
+  .maths-flow{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .matbox{
+    font-family:"IBM Plex Mono", monospace; font-size:0.76rem;
+    background:var(--panel-raised); border:1px solid var(--line); border-radius:4px;
+    padding:8px 10px; display:inline-grid; gap:2px 10px;
+  }
+  .matbox.vec{ grid-auto-flow:column; }
+  .matbox .mname{ grid-column:1/-1; color:var(--text-faint); font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;}
+  .matbox .cell{ text-align:right; color:var(--text); min-width:2.4em; }
+  .matbox .cell.neg{ color:var(--bad); }
+  .matbox .cell.hl{ color:var(--amber); font-weight:600; }
+  .op{ color:var(--text-faint); font-size:1rem; }
+  .maths-note{ color:var(--text-dim); font-size:0.82rem; max-width:64ch; margin:8px 0 0; }
+
+  /* ---------- paper mode button + modal ---------- */
+  .paper-cta{
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:20px;
+  }
+  .paper-cta .txt h3{ font-size:1rem; margin-bottom:4px; }
+  .paper-cta .txt p{ color:var(--text-dim); font-size:0.86rem; margin:0; max-width:52ch; }
+  button.cta{
+    font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+    background:var(--amber); color:#1a1204; border:none; border-radius:4px;
+    padding:12px 20px; font-size:0.85rem; cursor:pointer; white-space:nowrap;
+  }
+  button.cta:hover{ filter:brightness(1.08); }
+  button.ghost{
+    font-family:"IBM Plex Mono", monospace; background:transparent; color:var(--text-dim);
+    border:1px solid var(--line); border-radius:4px; padding:9px 14px; cursor:pointer; font-size:0.78rem;
+  }
+  button.ghost:hover{ color:var(--text); border-color:var(--text-dim); }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(6,9,16,0.72);
+    display:none; align-items:flex-start; justify-content:center;
+    padding:26px 16px; overflow-y:auto; z-index:50;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .paper-sheet{
+    background:var(--paper-bg); color:var(--paper-ink);
+    width:100%; max-width:640px; border-radius:3px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    position:relative;
+    background-image: linear-gradient(var(--paper-rule) 1px, transparent 1px);
+    background-size: 100% 34px;
+    background-attachment:local;
+  }
+  .paper-inner{ padding:34px 34px 30px; }
+  .paper-sheet .close{
+    position:absolute; top:14px; right:14px;
+    background:none; border:none; font-size:1.3rem; color:var(--paper-ink); opacity:0.5; cursor:pointer;
+    font-family:"IBM Plex Mono",monospace;
+  }
+  .paper-sheet .close:hover{ opacity:1; }
+  .paper-step-label{
+    font-family:"IBM Plex Mono", monospace; font-size:0.78rem; letter-spacing:0.08em;
+    text-transform:uppercase; opacity:0.6; margin-bottom:6px;
+  }
+  .paper-sheet h2{
+    font-family:"IBM Plex Sans Condensed", sans-serif; font-size:1.3rem; color:var(--paper-ink);
+    text-transform:none; letter-spacing:0; margin-bottom:14px;
+  }
+  .paper-given{ font-family:"IBM Plex Mono", monospace; font-size:0.86rem; margin-bottom:16px; }
+  .paper-given .row{ display:flex; gap:18px; flex-wrap:wrap; margin-bottom:10px; }
+  .paper-mat{ display:inline-grid; gap:1px 12px; }
+  .paper-mat .mname{ grid-column:1/-1; font-size:0.68rem; opacity:0.6; text-transform:uppercase; }
+  .paper-mat .cell{ text-align:right; min-width:2.2em; }
+  .paper-prompt{
+    font-family:"IBM Plex Mono", monospace; font-size:0.92rem; background:rgba(0,0,0,0.045);
+    border:1px dashed var(--paper-rule); border-radius:3px; padding:14px 16px; margin-bottom:16px;
+  }
+  .paper-answer{
+    font-family:"IBM Plex Mono", monospace; font-size:0.88rem;
+    border-top:1px dashed var(--paper-rule); padding-top:14px; margin-top:4px;
+  }
+  .paper-nav{ display:flex; justify-content:space-between; align-items:center; margin-top:22px; gap:10px; flex-wrap:wrap;}
+  .paper-nav button{
+    font-family:"IBM Plex Mono", monospace; background:var(--paper-ink); color:var(--paper-bg);
+    border:none; border-radius:3px; padding:9px 16px; cursor:pointer; font-size:0.8rem;
+  }
+  .paper-nav button:disabled{ opacity:0.35; cursor:default; }
+  .paper-nav button.reveal{ background:transparent; color:var(--paper-ink); border:1px solid var(--paper-ink); }
+
+  footer{
+    border-top:1px solid var(--line); padding-top:20px; margin-top:50px;
+    color:var(--text-faint); font-size:0.8rem;
+  }
+  footer ul{ margin:10px 0 0; padding-left:18px; }
+  footer li{ margin-bottom:4px; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="kicker">Tiny Transformer &mdash; By Hand</span>
+      <h1>run casing &rarr; ?</h1>
+    </div>
+    <span class="badge">toy model &middot; not an LLM &middot; not ChatGPT</span>
+  </header>
+
+  <section>
+    <div class="section-label"><span class="tick"></span>Live readout</div>
+    <div class="panel">
+      <div class="pipeline">
+        <div class="stage">
+          <span class="stage-title">Input tokens</span>
+          <div class="tokens">
+            <div class="token-chip">RUN</div>
+            <div class="token-chip">CASING</div>
+          </div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage">
+          <span class="stage-title">Attention weights (row 2)</span>
+          <div class="attn-grid" id="attnGrid"></div>
+          <span class="attn-caption">how much &ldquo;casing&rdquo; attends to each position</span>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage">
+          <span class="stage-title" id="nextTokenLabel">P(next token)</span>
+          <div class="next-token-mini" id="miniBars"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label"><span class="tick"></span>Controls</div>
+    <div class="panel panel-pad">
+      <div class="controls-grid">
+        <div class="control">
+          <div class="control-label"><span>Learning rate</span><span class="control-value" id="lrVal">2.0</span></div>
+          <input type="range" id="lrSlider" min="0" max="4" step="0.1" value="2">
+        </div>
+        <div class="control">
+          <div class="control-label"><span>&ldquo;casing&rdquo; embedding, 2nd coord</span><span class="control-value" id="embVal">1.0</span></div>
+          <input type="range" id="embSlider" min="-2" max="2" step="0.1" value="1">
+        </div>
+        <div class="control">
+          <div class="control-label"><span>Training steps applied</span></div>
+          <div class="switch" id="stepSwitch">
+            <button data-v="0" class="on">0</button>
+            <button data-v="1">1</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label"><span class="tick"></span><span id="probsHeading">P(next token | &ldquo;run casing&rdquo;) &mdash; before training</span></div>
+    <div class="panel panel-pad">
+      <div id="probTrack"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--amber)"></span>target &mdash; &ldquo;shoe&rdquo;</span>
+        <span><span class="dot" style="background:var(--text-faint); box-shadow:inset 0 0 0 2px var(--teal)"></span>model&rsquo;s top guess</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label"><span class="tick"></span>Before / after one update</div>
+    <div class="compare">
+      <div class="before">
+        <div class="cap">Before training</div>
+        <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v num" id="pBefore">&mdash;</span></div>
+        <div class="metric"><span class="k">Loss</span><span class="v num" id="lossBefore">&mdash;</span></div>
+        <div class="metric"><span class="k">Predicted token</span><span class="v num" id="predBefore">&mdash;</span></div>
+      </div>
+      <div class="after">
+        <div class="cap">After 1 update</div>
+        <div class="metric"><span class="k">P(&ldquo;shoe&rdquo;)</span><span class="v num" id="pAfter">&mdash;</span></div>
+        <div class="metric"><span class="k">Loss</span><span class="v num" id="lossAfter">&mdash;</span></div>
+        <div class="metric"><span class="k">Predicted token</span><span class="v num" id="predAfter">&mdash;</span></div>
+      </div>
+      <div class="delta-row" id="deltaRow"></div>
+    </div>
+  </section>
+
+  <section>
+    <details class="disclose" id="mathsDetails">
+      <summary>Show the maths <span class="chev">&#9656;</span></summary>
+      <div class="maths-body" id="mathsBody"></div>
+    </details>
+  </section>
+
+  <section>
+    <div class="panel paper-cta">
+      <div class="txt">
+        <h3>Try it yourself, on paper</h3>
+        <p>Nine fill-in-the-blank steps, using the same fixed example this whole page is built from &mdash; X, W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, W<sub>Out</sub>. All you need is a calculator with e<sup>x</sup> and ln.</p>
+      </div>
+      <button class="cta" id="openPaper">Enter paper mode</button>
+    </div>
+  </section>
+
+  <footer>
+    <p>Built and numerically verified in Wolfram Mathematica (27 automated checks: matrix dimensions, softmax sums, causal-mask behaviour, gradient sign, and that P(&ldquo;shoe&rdquo;) rises while loss falls after the update). This page reimplements those exact, already-checked equations in plain JavaScript &mdash; nothing here is estimated or re-derived independently.</p>
+    <p>What this toy model leaves out on purpose, and why: LayerNorm, residual connections, dropout, multi-head attention, and a large feed-forward network &mdash; all omitted because, at this scale (1 head, 1 block, tens of parameters), they would add notation without adding insight (the "Show the maths" panel above includes a small optional illustration of what the feed-forward layer's nonlinearity would add). Positional encodings get a sharper caveat: self-attention has no built-in sense of order, and the causal mask above only distinguishes position 1 from position 2 because, with exactly 2 tokens, there are only 2 possible masks &mdash; it says what a position may look at, not where it sits. Longer sequences need an explicit positional signal (learned embeddings, sinusoidal encodings, or RoPE). See <code>methodology/</code> in the project repository for the full reasoning, the Mathematica notebook, and the hand-calculation worksheet.</p>
+  </footer>
+
+</div>
+
+<div class="modal-backdrop" id="paperBackdrop">
+  <div class="paper-sheet">
+    <button class="close" id="closePaper" aria-label="Close paper mode">&times;</button>
+    <div class="paper-inner">
+      <div class="paper-step-label" id="paperStepLabel">Step 1 of 9</div>
+      <h2 id="paperTitle"></h2>
+      <div class="paper-given" id="paperGiven"></div>
+      <div class="paper-prompt" id="paperPrompt"></div>
+      <div class="paper-answer" id="paperAnswer" style="display:none;"></div>
+      <div class="paper-nav">
+        <button id="paperPrev">&larr; Previous</button>
+        <button class="reveal" id="paperReveal">Show answer</button>
+        <button id="paperNext">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var VOCAB = ["<BOS>","run","casing","shoe","cement","<EOS>"];
+  var TARGET_IDX = 3; // "shoe"
+  var WQ = [[1,0],[1,1]];
+  var WK = [[1,1],[0,1]];
+  var WV = [[1,0],[0,1]];
+  var WOUT = [[0,1,0,1,-1,0],[0,0,1,-1,0,-1]];
+  var D = 2;
+
+  function mm2(A,B){
+    var r=[[0,0],[0,0]];
+    for(var i=0;i<2;i++) for(var j=0;j<2;j++) r[i][j]=A[i][0]*B[0][j]+A[i][1]*B[1][j];
+    return r;
+  }
+  function transpose2(A){ return [[A[0][0],A[1][0]],[A[0][1],A[1][1]]]; }
+  function vecMat(v,M){ // v length2, M is 2 x n -> length n
+    var n=M[0].length, r=new Array(n);
+    for(var j=0;j<n;j++) r[j]=v[0]*M[0][j]+v[1]*M[1][j];
+    return r;
+  }
+  function outer(u,v){ // u length2, v lengthN -> 2xN
+    return [ v.map(function(x){return u[0]*x;}), v.map(function(x){return u[1]*x;}) ];
+  }
+  function softmaxRow(row){ // row may contain -Infinity
+    var finite = row.filter(function(x){return isFinite(x);});
+    var m = Math.max.apply(null, finite);
+    var ex = row.map(function(x){ return isFinite(x) ? Math.exp(x-m) : 0; });
+    var s = ex.reduce(function(a,b){return a+b;},0);
+    return ex.map(function(e){return e/s;});
+  }
+  function softmax(z){
+    var m = Math.max.apply(null,z);
+    var ex = z.map(function(x){return Math.exp(x-m);});
+    var s = ex.reduce(function(a,b){return a+b;},0);
+    return ex.map(function(e){return e/s;});
+  }
+  function argmax(a){ var bi=0; for(var i=1;i<a.length;i++) if(a[i]>a[bi]) bi=i; return bi; }
+
+  function forwardPass(casingCoord2, wOutMatrix){
+    var run = [1,0], casing=[0, casingCoord2];
+    var X = [run, casing];
+    var Q = mm2(X,WQ), K = mm2(X,WK), V = mm2(X,WV);
+    var raw = mm2(Q, transpose2(K));
+    var scaled = [ [raw[0][0]/Math.sqrt(D), raw[0][1]/Math.sqrt(D)],
+                   [raw[1][0]/Math.sqrt(D), raw[1][1]/Math.sqrt(D)] ];
+    var masked = [ [scaled[0][0], -Infinity], [scaled[1][0], scaled[1][1]] ];
+    var attn = [ softmaxRow(masked[0]), softmaxRow(masked[1]) ];
+    var attnOut = mm2(attn, V);
+    var h = attnOut[1];
+    var logits = vecMat(h, wOutMatrix);
+    var probs = softmax(logits);
+    return {X:X,Q:Q,K:K,V:V,raw:raw,scaled:scaled,masked:masked,attn:attn,attnOut:attnOut,h:h,logits:logits,probs:probs};
+  }
+
+  function gradientStep(base, lr){
+    var oneHot = VOCAB.map(function(_,i){ return i===TARGET_IDX?1:0; });
+    var dLogits = base.probs.map(function(p,i){ return p-oneHot[i]; });
+    var dWOut = outer(base.h, dLogits);
+    var wOutNew = [
+      WOUT[0].map(function(w,j){ return w - lr*dWOut[0][j]; }),
+      WOUT[1].map(function(w,j){ return w - lr*dWOut[1][j]; })
+    ];
+    return {oneHot:oneHot, dLogits:dLogits, dWOut:dWOut, wOutNew:wOutNew};
+  }
+
+  function fmt(x, d){
+    if(x===-Infinity) return "-∞";
+    if(!isFinite(x)) return "—";
+    d = (d===undefined)?3:d;
+    return x.toFixed(d);
+  }
+  function pct(x){ return (x*100).toFixed(1)+"%"; }
+
+  /* ---------------- state ---------------- */
+  var state = { lr:2, emb:1, steps:0 };
+
+  var lrSlider = document.getElementById("lrSlider");
+  var embSlider = document.getElementById("embSlider");
+  var lrVal = document.getElementById("lrVal");
+  var embVal = document.getElementById("embVal");
+  var stepSwitch = document.getElementById("stepSwitch");
+
+  function setSliderPct(el){
+    var min=+el.min, max=+el.max, v=+el.value;
+    el.style.setProperty("--pct", ((v-min)/(max-min)*100)+"%");
+  }
+
+  lrSlider.addEventListener("input", function(){ state.lr=+lrSlider.value; lrVal.textContent=state.lr.toFixed(1); setSliderPct(lrSlider); render(); });
+  embSlider.addEventListener("input", function(){ state.emb=+embSlider.value; embVal.textContent=state.emb.toFixed(1); setSliderPct(embSlider); render(); });
+  stepSwitch.addEventListener("click", function(e){
+    var btn = e.target.closest("button"); if(!btn) return;
+    state.steps = +btn.getAttribute("data-v");
+    Array.prototype.forEach.call(stepSwitch.querySelectorAll("button"), function(b){ b.classList.toggle("on", b===btn); });
+    render();
+  });
+  setSliderPct(lrSlider); setSliderPct(embSlider);
+
+  /* ---------------- rendering ---------------- */
+  var attnGrid = document.getElementById("attnGrid");
+  var miniBars = document.getElementById("miniBars");
+  var probTrack = document.getElementById("probTrack");
+  var probsHeading = document.getElementById("probsHeading");
+  var mathsBody = document.getElementById("mathsBody");
+
+  function matbox(name, M, opts){
+    opts = opts||{};
+    var rows = Array.isArray(M[0]) ? M.length : 1;
+    var cols = Array.isArray(M[0]) ? M[0].length : M.length;
+    var html = '<div class="matbox" style="grid-template-columns:repeat('+cols+',1fr);">';
+    html += '<div class="mname">'+name+'</div>';
+    var flat = Array.isArray(M[0]) ? [].concat.apply([],M) : M;
+    for(var i=0;i<flat.length;i++){
+      var v=flat[i];
+      var cls = "cell" + (v<0 && isFinite(v) ? " neg":"") + ((opts.highlight && opts.highlight.indexOf(i)>-1) ? " hl":"");
+      html += '<div class="'+cls+'">'+fmt(v, opts.d)+'</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderAttnGrid(attn){
+    var html = '<div class="corner"></div><div>run</div><div>casing</div>';
+    html += '<div class="rowhead">run</div>';
+    html += '<div class="attn-cell" style="--w:'+attn[0][0]+'"><div class="fill"></div><span>'+fmt(attn[0][0],2)+'</span></div>';
+    html += '<div class="attn-cell" style="--w:'+attn[0][1]+'"><div class="fill"></div><span>'+fmt(attn[0][1],2)+'</span></div>';
+    html += '<div class="rowhead">casing</div>';
+    html += '<div class="attn-cell" style="--w:'+attn[1][0]+'"><div class="fill"></div><span>'+fmt(attn[1][0],2)+'</span></div>';
+    html += '<div class="attn-cell" style="--w:'+attn[1][1]+'"><div class="fill"></div><span>'+fmt(attn[1][1],2)+'</span></div>';
+    attnGrid.innerHTML = html;
+  }
+
+  function renderMiniBars(probs, targetIdx){
+    var order = [1,2,3,4]; // run, casing, shoe, cement (skip BOS/EOS to keep it compact)
+    var html = "";
+    order.forEach(function(i){
+      html += '<div class="mini-bar-row"><span class="label">'+VOCAB[i]+'</span>'+
+        '<span class="mini-bar-track"><span class="mini-bar-fill'+(i===targetIdx?" target":"")+'" style="width:'+(probs[i]*100)+'%"></span></span>'+
+        '<span class="pct">'+pct(probs[i])+'</span></div>';
+    });
+    miniBars.innerHTML = html;
+  }
+
+  function renderProbTrack(probs, targetIdx, predictedIdx){
+    var html = "";
+    for(var i=0;i<VOCAB.length;i++){
+      var cls = "track-row" + (i===targetIdx?" is-target":"") + (i===predictedIdx?" is-predicted":"");
+      html += '<div class="'+cls+'"><span class="tname">'+VOCAB[i]+'</span>'+
+        '<span class="track"><span class="track-fill" style="width:'+(probs[i]*100)+'%"></span></span>'+
+        '<span class="track-pct num">'+pct(probs[i])+'</span></div>';
+    }
+    probTrack.innerHTML = html;
+  }
+
+  function renderMaths(base, grad, showTraining){
+    var html = "";
+    html += '<div class="maths-section"><h3>1. Input &amp; projections</h3><div class="maths-flow">'+
+      matbox("X", base.X) + '<span class="op">&middot;</span>' + matbox("W_Q", WQ) + '<span class="op">=</span>' + matbox("Q", base.Q) +
+      '</div><div class="maths-flow">'+
+      matbox("X", base.X) + '<span class="op">&middot;</span>' + matbox("W_K", WK) + '<span class="op">=</span>' + matbox("K", base.K) +
+      '</div><div class="maths-flow">'+
+      matbox("X", base.X) + '<span class="op">&middot;</span>' + matbox("W_V", WV) + '<span class="op">=</span>' + matbox("V", base.V) +
+      '</div><p class="maths-note">Q, K, V are computed from X, not fixed matrices &mdash; they only equal W_Q, W_K, W_V at the default embedding value of 1.0, where X happens to be the identity matrix. Drag the embedding slider above and watch Q, K, V change while W_Q, W_K, W_V stay exactly as printed.</p></div>';
+
+    html += '<div class="maths-section"><h3>2. Attention</h3><div class="maths-flow">'+
+      matbox("Q &middot; Kᵀ", base.raw) + '<span class="op">/ &radic;2 &rarr;</span>' + matbox("scaled", base.scaled) +
+      '</div><p class="maths-note">Causal mask: row 1 (&ldquo;run&rdquo;) cannot see position 2, so that entry is set to &minus;&infin; before the softmax below.</p>'+
+      '<div class="maths-flow">'+ matbox("masked", base.masked) + '<span class="op">softmax rows &rarr;</span>' + matbox("attention weights", base.attn) +
+      '</div><div class="maths-flow">'+
+      matbox("attn &middot; V", base.attnOut) + '<span class="op">row 2 =</span>' + matbox("h", base.h, {highlight:[0,1]}) +
+      '</div></div>';
+
+    html += '<div class="maths-section"><h3>3. Output &amp; probabilities</h3><div class="maths-flow">'+
+      matbox("h &middot; W_Out", base.logits, {d:3}) +
+      '</div><div class="maths-flow">'+
+      matbox("softmax(logits) = P", base.probs, {d:3, highlight:[TARGET_IDX]}) +
+      '</div><p class="maths-note">P(&ldquo;shoe&rdquo;) = '+fmt(base.probs[TARGET_IDX],4)+'  &middot;  Loss = &minus;ln(P) = '+fmt(-Math.log(base.probs[TARGET_IDX]),4)+'</p></div>';
+
+    var W1 = [[1,-1],[-1,1]];
+    var preAct = vecMat(base.h, W1);
+    var postAct = preAct.map(function(x){ return Math.max(0,x); });
+    html += '<div class="maths-section"><h3>Optional &mdash; what a feed-forward layer would add</h3>'+
+      '<p class="maths-note">Logits = h &middot; W_Out is one linear map; the only nonlinearity anywhere above is the softmax inside attention and inside the final probabilities. Real transformer blocks add one more explicit nonlinearity, a feed-forward layer applied per position: ReLU(h &middot; W1 + b1) &middot; W2 + b2. Here is just the ReLU half, applied to h above (not fed into logits &mdash; a standalone illustration):</p>'+
+      '<div class="maths-flow">'+
+      matbox("h", base.h, {d:3}) + '<span class="op">&middot;</span>' + matbox("W1", W1) + '<span class="op">=</span>' + matbox("pre-activation", preAct, {d:3}) + '<span class="op">ReLU &rarr;</span>' + matbox("post-activation", postAct, {d:3}) +
+      '</div><p class="maths-note">Whichever coordinate is negative before the activation becomes exactly 0 after it &mdash; ReLU has discarded that direction. This step is not part of the trained example above; it never feeds into the logits, gradient, or update anywhere on this page.</p></div>';
+
+    if(showTraining){
+      html += '<div class="maths-section"><h3>4. Gradient &amp; update</h3><div class="maths-flow">'+
+        matbox("P &minus; oneHot = dLogits", grad.dLogits, {d:3}) +
+        '</div><div class="maths-flow">'+
+        matbox("dW_Out = outer(h, dLogits)", grad.dWOut, {d:3}) +
+        '</div><div class="maths-flow">'+
+        matbox("W_Out (old)", WOUT) + '<span class="op">&minus; lr &middot;</span>' + matbox("dW_Out", grad.dWOut, {d:3}) + '<span class="op">=</span>' + matbox("W_Out (new)", grad.wOutNew, {d:3}) +
+        '</div></div>';
+    }
+    mathsBody.innerHTML = html;
+  }
+
+  function render(){
+    var base = forwardPass(state.emb, WOUT);
+    var grad = gradientStep(base, state.lr);
+    var after = forwardPass(state.emb, grad.wOutNew);
+
+    var pBefore = base.probs[TARGET_IDX], lossBefore = -Math.log(pBefore);
+    var pAfter = state.steps===1 ? after.probs[TARGET_IDX] : pBefore;
+    var lossAfter = state.steps===1 ? -Math.log(pAfter) : lossBefore;
+    var displayed = state.steps===1 ? after.probs : base.probs;
+    var predictedIdx = argmax(displayed);
+
+    renderAttnGrid(base.attn);
+    renderMiniBars(displayed, TARGET_IDX);
+    probsHeading.textContent = 'P(next token | “run casing”) — ' + (state.steps===1 ? 'after 1 update' : 'before training');
+    renderProbTrack(displayed, TARGET_IDX, predictedIdx);
+
+    document.getElementById("pBefore").textContent = pct(pBefore);
+    document.getElementById("lossBefore").textContent = fmt(lossBefore,4);
+    document.getElementById("predBefore").textContent = VOCAB[argmax(base.probs)];
+
+    document.getElementById("pAfter").textContent = pct(pAfter);
+    document.getElementById("lossAfter").textContent = fmt(lossAfter,4);
+    document.getElementById("predAfter").textContent = VOCAB[argmax(state.steps===1?after.probs:base.probs)];
+
+    var deltaRow = document.getElementById("deltaRow");
+    if(state.steps===1){
+      var dP = pAfter-pBefore, dL = lossAfter-lossBefore;
+      deltaRow.innerHTML = 'P("shoe") <b>'+(dP>=0?"+":"")+(dP*100).toFixed(1)+' pts</b> &nbsp;&middot;&nbsp; Loss <b>'+dL.toFixed(4)+'</b> &nbsp;&middot;&nbsp; ' +
+        (dP>0 && dL<0 ? 'probability up, loss down — as expected from gradient descent.' : 'try the default sliders (lr=2, embedding=1) to see the textbook result.');
+    } else {
+      deltaRow.innerHTML = 'Flip the switch above to 1 to apply one gradient-descent update to W_Out and see how these numbers move.';
+    }
+
+    renderMaths(base, grad, state.steps===1);
+  }
+
+  render();
+
+  /* ---------------- paper mode ---------------- */
+  var CANON = forwardPass(1, WOUT); // casing embedding = 1 -> matches HAND_CALCULATION.md exactly
+  var CANON_GRAD = gradientStep(CANON, 2); // learning rate = 2
+
+  function pm(name, M, d){ return matbox(name, M, {d:d===undefined?3:d}); }
+
+  var steps = [
+    {
+      title: "Step 1 — Query vectors",
+      given: pm("X", CANON.X, 0) + pm("W_Q", WQ, 0),
+      prompt: "Calculate Q = X &middot; W_Q",
+      answer: pm("Q", CANON.Q, 0)
+    },
+    {
+      title: "Step 2 — Key vectors",
+      given: pm("X", CANON.X, 0) + pm("W_K", WK, 0),
+      prompt: "Calculate K = X &middot; W_K",
+      answer: pm("K", CANON.K, 0)
+    },
+    {
+      title: "Step 3 — Value vectors",
+      given: pm("X", CANON.X, 0) + pm("W_V", WV, 0),
+      prompt: "Calculate V = X &middot; W_V",
+      answer: pm("V", CANON.V, 0)
+    },
+    {
+      title: "Step 4 — Raw attention scores",
+      given: pm("Q", CANON.Q, 0) + pm("K", CANON.K, 0),
+      prompt: "Calculate Q &middot; Kᵀ (transpose K, then multiply)",
+      answer: pm("Q · Kᵀ", CANON.raw, 0)
+    },
+    {
+      title: "Step 5 — Scale and mask",
+      given: pm("Q · Kᵀ", CANON.raw, 0) + "<div class='paper-mat'><div class='mname'>d</div><div class='cell'>2</div></div>",
+      prompt: "Divide every entry by √2. Then: position 1 (“run”) may not look at position 2 (“casing”) &mdash; it hasn't happened yet from “run”'s point of view. Replace that one entry with −∞.",
+      answer: pm("masked scores", CANON.masked, 3)
+    },
+    {
+      title: "Step 6 — Softmax the attention scores",
+      given: pm("masked scores", CANON.masked, 3),
+      prompt: "Apply softmax to each row: exponentiate, then divide by the row's sum. (A −∞ entry exponentiates to 0.)",
+      answer: pm("attention weights", CANON.attn, 4)
+    },
+    {
+      title: "Step 7 — Weighted value / attention output",
+      given: pm("attention weights", CANON.attn, 4) + pm("V", CANON.V, 0),
+      prompt: "Calculate attention weights &middot; V, then take row 2 (the “casing” position) &mdash; call it h.",
+      answer: pm("h", CANON.h, 4)
+    },
+    {
+      title: "Step 8 — Logits and P(“shoe”)",
+      given: pm("h", CANON.h, 4) + pm("W_Out", WOUT, 0),
+      prompt: "Calculate logits = h &middot; W_Out, then softmax them to get probabilities. Read off the entry for “shoe” (4th token).",
+      answer: pm("logits", CANON.logits, 3) + pm("P", CANON.probs, 4) + "<p style='margin-top:8px;'>P(“shoe”) = "+fmt(CANON.probs[TARGET_IDX],4)+"</p>"
+    },
+    {
+      title: "Step 9 — Loss, gradient, and the update",
+      given: pm("P", CANON.probs, 4) + "<div class='paper-mat'><div class='mname'>target</div><div class='cell'>shoe (id 4)</div></div>",
+      prompt: "Loss = −ln(P(“shoe”)). Gradient: dLogits = P &minus; one-hot(shoe). dW_Out = outer(h, dLogits). With learning rate 2: W_Out,new = W_Out &minus; 2&middot;dW_Out.",
+      answer: "<p>Loss = "+fmt(-Math.log(CANON.probs[TARGET_IDX]),4)+"</p>" + pm("dLogits", CANON_GRAD.dLogits,3) + pm("W_Out,new", CANON_GRAD.wOutNew,3)
+    }
+  ];
+
+  var paperIdx = 0;
+  var paperBackdrop = document.getElementById("paperBackdrop");
+  var paperStepLabel = document.getElementById("paperStepLabel");
+  var paperTitle = document.getElementById("paperTitle");
+  var paperGiven = document.getElementById("paperGiven");
+  var paperPrompt = document.getElementById("paperPrompt");
+  var paperAnswer = document.getElementById("paperAnswer");
+  var paperReveal = document.getElementById("paperReveal");
+  var paperPrev = document.getElementById("paperPrev");
+  var paperNext = document.getElementById("paperNext");
+
+  function renderPaper(){
+    var s = steps[paperIdx];
+    paperStepLabel.textContent = "Step "+(paperIdx+1)+" of "+steps.length;
+    paperTitle.textContent = s.title;
+    paperGiven.innerHTML = "<div class='row'>"+s.given+"</div>";
+    paperPrompt.innerHTML = s.prompt;
+    paperAnswer.innerHTML = s.answer;
+    paperAnswer.style.display = "none";
+    paperReveal.textContent = "Show answer";
+    paperPrev.disabled = paperIdx===0;
+    paperNext.disabled = paperIdx===steps.length-1;
+  }
+
+  document.getElementById("openPaper").addEventListener("click", function(){
+    paperIdx = 0; renderPaper(); paperBackdrop.classList.add("open");
+  });
+  document.getElementById("closePaper").addEventListener("click", function(){ paperBackdrop.classList.remove("open"); });
+  paperBackdrop.addEventListener("click", function(e){ if(e.target===paperBackdrop) paperBackdrop.classList.remove("open"); });
+  paperReveal.addEventListener("click", function(){
+    var showing = paperAnswer.style.display !== "none";
+    paperAnswer.style.display = showing ? "none" : "block";
+    paperReveal.textContent = showing ? "Show answer" : "Hide answer";
+  });
+  paperPrev.addEventListener("click", function(){ if(paperIdx>0){ paperIdx--; renderPaper(); } });
+  paperNext.addEventListener("click", function(){ if(paperIdx<steps.length-1){ paperIdx++; renderPaper(); } });
+  document.addEventListener("keydown", function(e){
+    if(!paperBackdrop.classList.contains("open")) return;
+    if(e.key==="Escape") paperBackdrop.classList.remove("open");
+  });
+
+})();
+</script>

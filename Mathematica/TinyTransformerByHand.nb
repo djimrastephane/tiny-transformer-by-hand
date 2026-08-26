@@ -1,0 +1,582 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(* Beginning of Notebook Content *)
+Notebook[{Cell["Can We Calculate a Transformer by Hand?", "Title"], 
+  Cell["A tiny transformer language model, worked entirely by hand \
+\[LongDash] from \"run casing\" to a probability for \"shoe\"", "Subtitle"], 
+  Cell["Modern language models contain billions of parameters and perform \
+trillions of arithmetic operations per response. Nobody reproduces that by \
+hand, and nobody needs to \[LongDash] but the arithmetic itself is not \
+exotic. It is addition, multiplication, exponentials, and logarithms, \
+arranged in a particular pattern called a transformer.\n\nThis notebook \
+shrinks that pattern down until every number fits on a sheet of paper. We use \
+a vocabulary of 6 words, sequences of 2 tokens, and an embedding dimension of \
+2. The whole model has a few dozen parameters. Every matrix multiplication, \
+every softmax, every gradient below can be checked with a calculator.\n\nThe \
+example is a drilling/completions phrase: given the two-word input \"run \
+casing\", the model should predict that the next word is \"shoe\" (as in a \
+casing shoe). This is a toy transformer LANGUAGE model \[LongDash] not an \
+LLM, and not any kind of reproduction of ChatGPT or similar production \
+systems. Its only job is to make the mechanics of attention, softmax, loss, \
+and gradient descent completely visible.", "Text"], 
+  Cell["The shape of the calculation", "Subsection"], 
+  Cell["Here is the full pipeline we are about to compute, start to finish. \
+Every arrow below corresponds to a section of this notebook and an explicit \
+matrix or vector calculation.", "Text"], Cell["\"run casing\"\n    \
+\[DownArrow]\nToken IDs                    (Section 2)\n    \
+\[DownArrow]\nEmbeddings                   (Section 3)\n    \[DownArrow]\nQ, \
+K, V                      (Section 4)\n    \[DownArrow]\nScaled dot-product \
+attention  (Sections 5-8)\n    \[DownArrow]\nOutput representation        \
+(Section 8)\n    \[DownArrow]\nLogits                       (Section 9)\n    \
+\[DownArrow]\nSoftmax probabilities        (Section 10)\n    \
+\[DownArrow]\nPrediction: \"shoe\"?\n    \[DownArrow]\nCross-entropy loss     \
+      (Section 11)\n    \[DownArrow]\nGradient                     (Section \
+12)\n    \[DownArrow]\nWeight update                (Section 13)\n    \
+\[DownArrow]\nNew prediction                (Section 14)", "Program"], 
+  Cell["What this notebook is \[LongDash] and is not", "Subsection"], 
+  Cell["This is a transformer: the same attention-then-project pattern used \
+by real language models, reduced to a size a person can compute by hand. It \
+is a language model in the narrow technical sense of Section 1 below: \
+something that assigns probabilities to \"what word comes next\". It is not \
+an LLM (a large language model with billions of parameters trained on \
+enormous text corpora), and it is not ChatGPT, Claude, or any production \
+system. Treat every number in this notebook as belonging to a teaching-sized \
+toy, not a scaled-down copy of a real product.", "Text"], 
+  Cell["What we left out, and why that is fine here", "Subsection"], 
+  Cell["LayerNorm \[LongDash] real transformers rescale activations between \
+steps to keep training stable across many layers. With one block and tens of \
+parameters, there is nothing to destabilize.", "Item"], 
+  Cell["Residual (skip) connections \[LongDash] these help gradients flow \
+through many stacked layers. We only have one layer, so there is no long path \
+for a gradient to vanish along.", "Item"], Cell["Dropout \[LongDash] a \
+regularizer that fights overfitting on large datasets. We have exactly one \
+training example, so overfitting is not the concern; transparency is.", 
+   "Item"], Cell["Multi-head attention \[LongDash] real models run several \
+attention computations in parallel and combine them. One head already shows \
+the complete mechanism; a second head would only duplicate arithmetic without \
+adding a new idea.", "Item"], Cell["A large feed-forward network inside the \
+block \[LongDash] omitted so that the output projection (Section 9) is the \
+only place logits are produced, keeping the path from attention output to \
+prediction short and traceable. (Section 9 includes a small optional \
+illustration of what this sublayer's nonlinearity would add.)", "Item"], 
+  Cell["Positional encodings \[LongDash] with only 2 positions and a causal \
+mask that already distinguishes \"first token\" from \"second token\", an \
+explicit position signal would add notation without adding insight (see the \
+sharper caveat just below).", "Item"], Cell["Every one of these choices \
+trades realism for transparency. Section 16 returns to this trade-off \
+explicitly.", "Text"], 
+  Cell["A sharper caveat: attention itself does not know about order", 
+   "Subsection"], Cell["The positional-encoding omission above deserves more \
+care than the others, because it is easy to overstate how much the causal \
+mask is doing. Self-attention on its own has no built-in sense of sequence \
+order: feed an (uncausal) attention layer the same set of token vectors in a \
+different order, and it produces the same set of outputs, merely permuted the \
+same way \[LongDash] attention is a function of content-based similarity \
+between vectors, not of where those vectors sit in a list.\n\nCausal masking \
+(Section 6) breaks that symmetry for us here only because, with exactly 2 \
+positions, there are exactly 2 possible masks \[LongDash] \"see only \
+yourself\" and \"see everyone so far\" \[LongDash] and that happens to be \
+enough to tell position 1 apart from position 2. It is not, in general, a \
+substitute for positional encoding: a mask tells a position what it is \
+allowed to look at, not where it sits or how far away another token is. Real \
+transformers add an explicit positional signal \[LongDash] learned position \
+embeddings, sinusoidal encodings, or rotary embeddings (RoPE) \[LongDash] \
+precisely because causal masking alone stops being enough once sequences are \
+longer than 2 tokens.", "Text"], Cell["1. The Prediction Problem", 
+   "Section"], Cell["Given the two-word phrase:\n\n\"run casing\"\n\nwe want \
+the model to predict the single most likely next word. In this \
+drilling/completions example, the correct next word is:\n\n\"shoe\"\n\n(as in \
+a casing shoe, the equipment run on the bottom of a casing string).\n\nIn \
+plain language, a language model's job is to compute:\n\nP(next token | \
+previous tokens)\n\n\[LongDash] read as \"the probability of the next token, \
+given the tokens that came before it.\" The model does not know English, \
+drilling engineering, or anything else. It only manipulates numbers derived \
+from the input tokens, and those numbers happen to be arranged so that, after \
+training, the right answer gets a high probability and everything else gets a \
+low one. The rest of this notebook computes that probability distribution for \
+\"run casing\" explicitly, one arithmetic step at a time, then shows how a \
+single training update changes it.", "Text"], 
+  Cell["2. Vocabulary and Token IDs", "Section"], 
+  Cell["Computers do not work with words directly. The first step of any \
+language model is to fix a vocabulary \[LongDash] a finite list of tokens the \
+model knows about \[LongDash] and give every token an ID number (its position \
+in the list). Any text the model sees must be built out of these tokens; \
+anything outside the vocabulary simply cannot be represented.\n\nOur \
+vocabulary has 6 tokens: a beginning-of-sequence marker, three \
+drilling-related words, one more drilling-related word, and an \
+end-of-sequence marker.", "Text"], Cell[BoxData["Vocabulary = {\"<BOS>\", \
+\"run\", \"casing\", \"shoe\", \"cement\", \
+\"<EOS>\"};\nGrid[Prepend[Transpose[{Vocabulary, Range[Length[Vocabulary]]}], \
+{\"Token\", \"Token ID\"}],\n  Frame -> All, Background -> {None, {LightGray, \
+None}}]"], "Input"], Cell["Our input phrase \"run casing\" is a sequence of \
+two tokens. Looking up each word's position in the list above turns the \
+phrase into a list of token IDs:", "Text"], 
+  Cell[BoxData["inputTokens = {\"run\", \"casing\"};\ntokenIDs = \
+Flatten[Position[Vocabulary, #] & /@ inputTokens]"], "Input"], 
+  Cell["So \"run casing\" becomes {2, 3}: \"run\" is token 2 and \"casing\" \
+is token 3. From this point on, the model never sees the words \"run\" or \
+\"casing\" again \[LongDash] only the numbers 2 and 3, and (next) the vectors \
+those numbers point to.", "Text"], Cell["3. Embedding Lookup", "Section"], 
+  Cell["A token ID like 2 is just a label \[LongDash] it carries no \
+information about meaning or similarity between words. An embedding replaces \
+each token ID with a vector of numbers (here, a vector of length 2) that the \
+model can actually do arithmetic with. In a real model these vectors are \
+learned from data and have hundreds of dimensions; here we fix them by hand, \
+with dimension 2, so every coordinate can be inspected directly.\n\nBelow is \
+the full embedding table: one row per vocabulary token, one column per \
+embedding dimension.", "Text"], Cell[BoxData["EmbeddingMatrix = {\n  {0, 0},  \
+ (* <BOS>  *)\n  {1, 0},   (* run    *)\n  {0, 1},   (* casing *)\n  {1, 1},  \
+ (* shoe   *)\n  {-1, 1},  (* cement *)\n  {0, -1}   (* <EOS>  \
+*)\n};\nGrid[Prepend[Transpose[{Vocabulary, EmbeddingMatrix}], {\"Token\", \
+\"Embedding\"}],\n  Frame -> All, Background -> {None, {LightGray, None}}]"], 
+   "Input"], Cell["\"run\" is deliberately set to {1, 0} and \"casing\" to \
+{0, 1} \[LongDash] the two simplest possible distinct vectors in 2 \
+dimensions. Selecting the rows for our input tokens {2, 3} builds the input \
+matrix X: row 1 is the embedding of position 1 (\"run\"), row 2 is the \
+embedding of position 2 (\"casing\"), and the 2 columns are the 2 embedding \
+dimensions.", "Text"], 
+  Cell[BoxData["X = EmbeddingMatrix[[tokenIDs]];\nMatrixForm[X]"], "Input"], 
+  Cell[BoxData["Dimensions[X]"], "Input"], Cell["X is 2\[Times]2: 2 rows \
+because our sequence has 2 tokens, 2 columns because our embedding dimension \
+is 2. Because \"run\" and \"casing\" happen to be the two standard unit \
+vectors, X is exactly the 2\[Times]2 identity matrix \[LongDash] a convenient \
+coincidence that will make the next multiplications easy to check by hand, \
+without changing what the multiplication means.", "Text"], 
+  Cell["4. Query, Key, and Value Matrices", "Section"], 
+  Cell["Attention compares positions to each other using three vectors \
+derived from each position's embedding, called the query, key, and value. \
+These are just names for the results of three ordinary matrix multiplications \
+\[LongDash] there is no decision-making or comparison happening yet, only \
+arithmetic that sets up the comparison in Section 5.\n\nWe fix three \
+2\[Times]2 weight matrices, WQ, WK, WV, by hand:", "Text"], 
+  Cell[BoxData["WQ = {{1, 0}, {1, 1}};\nWK = {{1, 1}, {0, 1}};\nWV = {{1, 0}, \
+{0, 1}};\nRow[{MatrixForm[WQ], \"      \", MatrixForm[WK], \"      \", \
+MatrixForm[WV]}]"], "Input"], Cell["Query Q = X . WQ. Each row of Q is a row \
+of X (a token's embedding) multiplied against the columns of WQ, \
+entry-by-entry sum of products \[LongDash] ordinary matrix multiplication:", 
+   "Text"], Cell[BoxData["Q = X.WQ;\nRow[{MatrixForm[X], \"   .   \", \
+MatrixForm[WQ], \"   =   \", MatrixForm[Q]}]"], "Input"], 
+  Cell["Key K = X . WK, computed the same way:", "Text"], 
+  Cell[BoxData["K = X.WK;\nRow[{MatrixForm[X], \"   .   \", MatrixForm[WK], \
+\"   =   \", MatrixForm[K]}]"], "Input"], 
+  Cell["Value V = X . WV, computed the same way:", "Text"], 
+  Cell[BoxData["V = X.WV;\nRow[{MatrixForm[X], \"   .   \", MatrixForm[WV], \
+\"   =   \", MatrixForm[V]}]"], "Input"], Cell["Because X is the identity \
+matrix (Section 3), each product above equals the corresponding weight matrix \
+exactly (Q = WQ, K = WK, V = WV). You can verify this by hand: row 1 of X, \
+{1,0}, times WQ picks out row 1 of WQ; row 2, {0,1}, picks out row 2. With a \
+less convenient X the arithmetic is the same, just less obviously so.", 
+   "Text"], 
+  Cell["Q, K, and V are token-dependent \[LongDash] not fixed matrices", 
+   "Subsubsection"], Cell["Do not read Q = WQ as a general rule: it is a \
+coincidence of this particular pair of embeddings, and it is worth breaking \
+on purpose so the point is unmistakable. Q, K, and V are computed from the \
+input X, so a different input produces different Q, K, V, even though WQ, WK, \
+WV never change. Suppose \"casing\"'s embedding had been (0, 2) instead of \
+(0, 1):", "Text"], Cell[BoxData["XAlt = {{1, 0}, {0, 2}};  (* same as X, but \
+\"casing\" rescaled from (0,1) to (0,2) *)\nQAlt = \
+XAlt.WQ;\nRow[{MatrixForm[XAlt], \"   .   \", MatrixForm[WQ], \"   =   \", \
+MatrixForm[QAlt]}]"], "Input"], Cell["QAlt's second row, (2, 2), no longer \
+matches WQ's second row, (1, 1) \[LongDash] confirming that Q genuinely \
+depends on the input, and that the equality Q = WQ used above only holds \
+because of the specific embeddings chosen in Section 3, not because Q is \
+somehow a static weight matrix. (The interactive section near the end of this \
+notebook lets you drag this exact embedding coordinate and watch Q, K, V, and \
+every downstream quantity respond in real time.)", "Text"], 
+  Cell["5. Attention Scores", "Section"], Cell["To measure how much position \
+2 should attend to position 1 (and to itself), we compare Q to K using a \
+matrix product: Q . Transpose[K]. Each entry (i, j) of the result is the dot \
+product of query i with key j \[LongDash] a single number summarizing how \
+well they align.", "Text"], Cell[BoxData["rawScores = \
+Q.Transpose[K];\nRow[{MatrixForm[Q], \"   .   \", MatrixForm[Transpose[K]], \
+\"   =   \", MatrixForm[rawScores]}]"], "Input"], 
+  Cell["Before using these numbers, we scale them down by Sqrt[d], where d = \
+2 is the embedding dimension. Why: as d grows, dot products of random vectors \
+tend to grow larger in magnitude purely because more terms are being added \
+up, which would push the softmax in Section 7 toward extremely peaked (near \
+one-hot) outputs and make training unstable. Dividing by Sqrt[d] keeps the \
+scores in a stable, comparable range regardless of dimension.", "Text"], 
+  Cell[BoxData[
+    "d = 2;\nscaledScores = N[rawScores/Sqrt[d]];\nMatrixForm[scaledScores]"]\
+, "Input"], Cell["6. Causal Mask", "Section"], Cell["This is a next-token \
+predictor: for every position, we ask it to predict the token that comes \
+after that position. If position 1 (\"run\") were allowed to look at position \
+2 (\"casing\") while trying to predict what comes after \"run\", it would \
+effectively be allowed to see part of the very continuation it is supposed to \
+predict \[LongDash] not a fair test, and not how the model will be used at \
+inference time, one token at a time.\n\nA causal mask enforces this: position \
+i may attend only to positions j \[LessEqual] i. We implement the mask by \
+replacing every disallowed (future) entry with -\[Infinity], so that after \
+the softmax in Section 7 those positions receive exactly zero attention \
+weight.", "Text"], Cell[BoxData["maskedScores = {\n  {scaledScores[[1, 1]], \
+-Infinity},        (* position 1 (\"run\"): position 2 is masked *)\n  \
+{scaledScores[[2, 1]], scaledScores[[2, 2]]}  (* position 2 (\"casing\"): \
+both positions allowed *)\n};\nMatrixForm[maskedScores]"], "Input"], 
+  Cell["Compare this to the unmasked scaledScores above: only the top-right \
+entry changed, from a finite number to -\[Infinity]. That single entry is \
+exactly the score for \"position 1 attending to position 2\" \[LongDash] the \
+one comparison a causal, left-to-right model is never allowed to make. \
+Position 2 keeps both of its entries, because when predicting the token after \
+\"casing\", the model is entitled to use everything up to and including \
+\"casing\".", "Text"], Cell["7. Softmax", "Section"], 
+  Cell["Attention scores need to become a probability distribution \
+\[LongDash] non-negative numbers that sum to 1 \[LongDash] so they can be \
+used as weights in Section 8. Softmax does this:\n\nSoftmax[z_i] = Exp[z_i] / \
+Sum[Exp[z_j], {j}]\n\nEvery score is exponentiated (so all results are \
+positive), then divided by the sum of all the exponentials in that row (so \
+the row sums to exactly 1). Let's do this by hand for row 2 (the \"casing\" \
+row), the one with two real numbers to compare:", "Text"], 
+  Cell[BoxData["row2 = maskedScores[[2]];\nexps = Exp[row2]"], "Input"], 
+  Cell[BoxData["sumExps = Total[exps]"], "Input"], 
+  Cell[BoxData["softmaxRow2 = exps/sumExps"], "Input"], 
+  Cell[BoxData["Total[softmaxRow2]"], "Input"], 
+  Cell["The two exponentials are ~4.113 and ~2.028; dividing each by their \
+sum ~6.141 gives probabilities ~0.670 and ~0.330, which do sum to 1 (up to \
+floating-point rounding). Now apply the same formula, row by row, to the \
+whole masked score matrix (row 1 is trivial: exp[x]/exp[x] = 1 for the only \
+allowed entry, and 0 for the masked one):", "Text"], 
+  Cell[BoxData["SoftmaxRow[row_] := Module[{finite, m, ex},\n   finite = \
+Select[row, # > -Infinity &];\n   m = Max[finite];\n   ex = If[# > -Infinity, \
+Exp[# - m], 0] & /@ row;\n   ex/Total[ex]\n];\nattentionWeights = SoftmaxRow \
+/@ maskedScores;\nMatrixForm[attentionWeights]"], "Input"], 
+  Cell[BoxData["Total /@ attentionWeights"], "Input"], 
+  Cell["Both rows sum to 1, confirming attentionWeights is a valid pair of \
+probability distributions. Row 1 is {1, 0}: position 1 puts all of its \
+attention on itself, because the causal mask left it no other choice. Row 2 \
+is approximately {0.670, 0.330}: position 2 splits its attention mostly onto \
+position 1 (\"run\"), with some weight on itself.", "Text"], 
+  Cell["8. Weighted Values", "Section"], Cell["Attention weights tell us how \
+much to blend the value vectors of each position. The blend itself is one \
+more matrix multiplication:\n\nAttentionOutput = AttentionWeights . V", 
+   "Text"], Cell[BoxData["attentionOutput = \
+attentionWeights.V;\nRow[{MatrixForm[attentionWeights], \"   .   \", \
+MatrixForm[V], \"   =   \", MatrixForm[attentionOutput]}]"], "Input"], 
+  Cell["Row 1 of the result equals V's row 1 exactly (\"run\"'s own value \
+vector), since row 1 of attentionWeights was {1,0}. Row 2 is a genuine blend: \
+about 67% of V's row 1 plus 33% of V's row 2. This row \[LongDash] the \
+representation built at position 2, after mixing in information from position \
+1 under the causal mask \[LongDash] is what we use to predict the token that \
+comes after \"casing\":", "Text"], Cell[BoxData["h = attentionOutput[[2]]"], 
+   "Input"], Cell["9. Output Projection and Logits", "Section"], 
+  Cell["h is a length-2 vector, but we need a score for every one of the 6 \
+vocabulary tokens. The output projection matrix WOut (2 rows \[Times] 6 \
+columns, one column per vocabulary token) does that conversion:\n\nLogits = h \
+. WOut", "Text"], Cell[BoxData["WOut = {\n  {0, 1, 0,  1, -1,  0},\n  {0, 0, \
+1, -1,  0, -1}\n};\nMatrixForm[WOut]"], "Input"], 
+  Cell[BoxData["logits = h.WOut;\nGrid[Prepend[Transpose[{Vocabulary, \
+N[logits, 4]}], {\"Token\", \"Logit\"}],\n  Frame -> All, Background -> \
+{None, {LightGray, None}}]"], "Input"], Cell["These are logits, not \
+probabilities: they can be negative (cement, <EOS>), they do not sum to 1, \
+and by themselves they only rank tokens relative to each other. \"shoe\" and \
+\"run\" currently have the two largest logits, with \"shoe\" barely behind. \
+The next section turns these into an actual probability distribution.", 
+   "Text"], Cell["Optional / advanced: what a feed-forward layer would add", 
+   "Subsection"], Cell["Logits = h . WOut is a single linear map. Stacking \
+more linear maps does not change that \[LongDash] matrix multiplications \
+compose into one matrix multiplication. The only source of nonlinearity \
+anywhere in this notebook is the softmax inside attention (Section 7) and \
+inside the final prediction (Section 10). Mechanically, that makes this toy \
+model an attention-weighted linear classifier: expressive, because the \
+attention weights themselves depend nonlinearly on Q and K, but with no \
+additional per-position nonlinear reshaping layered on top of that.\n\nReal \
+transformer blocks add exactly that extra ingredient: a small feed-forward \
+network (FFN), applied independently to each position, of the form FFN(h) = \
+ReLU(h . W1 + b1) . W2 + b2. The ReLU (or GELU, in many modern models) \
+discards or reshapes some directions of h before they reach the next layer \
+\[LongDash] the ingredient that lets a stack of blocks build genuinely \
+nonlinear features, not just larger linear combinations of the original \
+embeddings. Here is the first half of that computation, using the h already \
+computed in Section 8 (this is a standalone illustration, not part of the \
+trained example \[LongDash] it is not included anywhere else in this \
+notebook, including the gradient and update sections):", "Text"], 
+  Cell[BoxData["W1 = {{1, -1}, {-1, 1}};\npreActivation = \
+h.W1;\npostActivation = Ramp[preActivation]; (* Ramp is Wolfram Language's \
+built-in ReLU: Ramp[x] = Max[0, x] *)\nGrid[{\n   {\"quantity\", \
+\"value\"},\n   {\"h  (Section 8)\", N[h, 4]},\n   {\"h . W1  \
+(pre-activation)\", N[preActivation, 4]},\n   {\"ReLU(h . W1)\", \
+N[postActivation, 4]}\n   }, Frame -> All, Background -> {None, {LightGray, \
+None}}]"], "Input"], Cell["The second coordinate is negative before the \
+activation and exactly zero after it \[LongDash] ReLU has discarded that \
+direction entirely. A full FFN sublayer would then project this back down \
+with one more linear layer (W2, b2) before continuing; the ReLU step above is \
+the genuinely new ingredient it adds. This notebook otherwise omits the FFN \
+everywhere else \[LongDash] including the trained example, the gradient, and \
+the weight update \[LongDash] to keep the parameter count in the tens rather \
+than the dozens, per Section 16's design principle. The mechanism above is \
+exactly what real transformer blocks add back in.", "Text"], 
+  Cell["10. Next-Token Probabilities", "Section"], 
+  Cell["We apply the same softmax formula from Section 7, this time to all 6 \
+logits at once:", "Text"], Cell[BoxData["Softmax2[z_] := Module[{m = Max[z], \
+ex}, ex = Exp[z - m]; ex/Total[ex]];\nprobabilities = \
+Softmax2[logits];\nGrid[Prepend[Transpose[{Vocabulary, N[logits, 4], \
+N[probabilities, 4]}],\n   {\"Token\", \"Logit\", \"Probability\"}], Frame -> \
+All, Background -> {None, {LightGray, None}}]"], "Input"], 
+  Cell[BoxData["Total[probabilities]"], "Input"], 
+  Cell[BoxData["BarChart[probabilities, ChartLabels -> Vocabulary, ChartStyle \
+-> \"Pastel\",\n  PlotLabel -> \"P(next token | \\\"run casing\\\") \
+\[LongDash] before training\", ImageSize -> 420]"], "Input"], 
+  Cell[BoxData["targetIndex = First[Flatten[Position[Vocabulary, \
+\"shoe\"]]];\npredictedIndex = First[Ordering[probabilities, \
+-1]];\n{\"target\" -> Vocabulary[[targetIndex]], \"predicted (highest \
+probability)\" -> Vocabulary[[predictedIndex]]}"], "Input"], 
+  Cell["Before any training, the model's highest-probability guess is \"run\" \
+(~28.0%), not the correct answer \"shoe\" (~20.1%, third-highest). That \
+mismatch between prediction and target is exactly what training will correct \
+in Sections 11-14.", "Text"], Cell["11. Cross-Entropy Loss", "Section"], 
+  Cell["We need a single number that measures how wrong this prediction was, \
+given that the true next token is \"shoe\". Cross-entropy loss for a single \
+example is:\n\nLoss = -Log[P(correct token)]\n\nPlain-language reading: if \
+the model had assigned probability 1 to the correct token, -Log[1] = 0 \
+\[LongDash] no loss, a perfect prediction. As the assigned probability \
+shrinks toward 0, -Log[p] grows without bound \[LongDash] a heavy penalty for \
+confidently ruling out the right answer. It is not a distance or an error \
+bar; it is a measure of \"how surprised the model should be\" about the true \
+answer, in the specific sense used throughout information theory and \
+statistics.", "Text"], Cell[BoxData["pShoe = probabilities[[targetIndex]]"], 
+   "Input"], Cell[BoxData["loss = -Log[pShoe]"], "Input"], 
+  Cell["P(\"shoe\") \[TildeEqual] 0.2012, so the loss is -Log[0.2012] \
+\[TildeEqual] 1.604. Section 14 will show this number falling after one \
+training update.", "Text"], Cell["12. One Training Step", "Section"], 
+  Cell["We now tell the model the true answer was \"shoe\", and ask: how \
+should the parameters change to make that outcome more likely next time? The \
+first step is the gradient of the loss with respect to the logits \[LongDash] \
+a vector that says, for every vocabulary token, how a tiny increase in that \
+token's logit would change the loss.\n\nFor softmax followed by cross-entropy \
+loss specifically, this gradient has a famously simple closed form that we \
+state and then verify numerically instead of re-deriving the calculus from \
+scratch:\n\ndL/dlogits = probabilities - oneHotTarget\n\nwhere oneHotTarget \
+is a vector of all zeros except a 1 in the position of the correct token.", 
+   "Text"], 
+  Cell[BoxData[
+    "oneHot = ReplacePart[ConstantArray[0, 6], targetIndex -> 1]"], "Input"], 
+  Cell[BoxData["dLogits = probabilities - oneHot"], "Input"], 
+  Cell["Every entry of dLogits is positive except the one for \"shoe\", which \
+is negative (\[TildeEqual] -0.799). Read plainly: increasing any wrong \
+token's logit would increase the loss (positive entries), while increasing \
+\"shoe\"'s logit would decrease the loss (its one negative entry) \[LongDash] \
+exactly the correction we want.", "Text"], 
+  Cell["Gradient of the output weights", "Subsection"], 
+  Cell["The chain rule extends this one step further, back through Logits = h \
+. WOut, to the weights themselves. Because logits are a linear function of \
+WOut, the gradient with respect to WOut is simply the outer product of h \
+(what multiplied WOut to produce the logits) and dLogits (how the loss \
+responds to each logit):\n\ndWOut = Outer[Times, h, dLogits]", "Text"], 
+  Cell[BoxData["dWOut = Outer[Times, h, dLogits];\nMatrixForm[N[dWOut, 4]]"], 
+   "Input"], Cell["Each entry dWOut[[i,j]] says how much loss would change \
+per unit increase of WOut[[i,j]]. Column 4 (\"shoe\") is the only column with \
+negative entries \[LongDash] increasing either weight feeding \"shoe\"'s \
+logit would lower the loss.", "Text"], 
+  Cell["Checking the gradient numerically (finite differences)", 
+   "Subsubsection"], Cell["As a sanity check that this formula is really the \
+slope of the loss \[LongDash] not just a formula we are asserting \[LongDash] \
+we nudge a single weight, WOut[[1,4]], by a tiny amount \[Epsilon] = 10^-6, \
+recompute the loss from scratch, and compare the resulting slope estimate to \
+the analytic gradient above:", "Text"], 
+  Cell[BoxData["eps = 10^-6;\nWOutPerturbed = WOut;\nWOutPerturbed[[1, 4]] = \
+WOutPerturbed[[1, 4]] + eps;\nlogitsPerturbed = \
+h.WOutPerturbed;\nprobsPerturbed = Softmax2[logitsPerturbed];\nlossPerturbed \
+= -Log[probsPerturbed[[targetIndex]]];\nnumericSlope = (lossPerturbed - \
+loss)/eps;\n{\"numeric slope (finite difference)\" -> numericSlope, \
+\"analytic dWOut[[1,4]]\" -> dWOut[[1, 4]]}"], "Input"], 
+  Cell["The two numbers agree to about 6 significant figures, which is \
+exactly the agreement we'd expect from a first-order finite-difference \
+approximation with \[Epsilon] = 10^-6. The closed-form gradient is correct, \
+not just asserted.", "Text"], 
+  Cell["What has \[LongDash] and has not \[LongDash] been updated", 
+   "Subsection"], Cell["This training step computes and applies a gradient \
+only for WOut, the output projection. WQ, WK, WV, and the embeddings are left \
+unchanged in this demonstration. That is a deliberate scope limit, not an \
+oversight: propagating the gradient further back, through the softmax \
+attention weights and into Q, K, V and the embeddings, is mathematically \
+possible (ordinary chain rule) but requires differentiating through the \
+attention softmax itself, whose Jacobian is more involved than the \
+softmax-cross-entropy shortcut used above. Rather than gloss over that \
+complexity, we stop the hand-worked gradient at the output layer, where every \
+number above can still be checked with a calculator, and leave further \
+backpropagation as an optional, clearly marked extension below.", "Text"], 
+  Cell["Optional / advanced: continuing backpropagation through attention", 
+   "Subsubsection"], Cell["For a reader who wants to go further: the same \
+chain rule keeps applying. dL/dh = dLogits . Transpose[WOut] tells you how \
+the loss responds to the attention output h; from there, h = attentionWeights \
+. V lets you get a gradient with respect to V directly (another outer \
+product, just like dWOut above). Going further still, into the attention \
+weights themselves, requires the Jacobian of the softmax function (a matrix, \
+not a simple subtraction, because every output of a softmax depends on every \
+input), and then one more chain-rule step through Q . Transpose[K] to reach \
+WQ and WK. Each of these steps is ordinary calculus, but the notation gets \
+noticeably heavier for no new conceptual payoff beyond what dWOut above \
+already demonstrates: gradients are computed by multiplying local slopes \
+together, moving backward through the same operations used going forward. \
+This notebook stops here by design; treat this paragraph as a map for further \
+exploration, not as a claim that we've hand-derived it in this notebook.", 
+   "Text"], Cell["13. Gradient Descent Update", "Section"], 
+  Cell["Gradient descent nudges every weight a small step in the direction \
+that reduces the loss \[LongDash] opposite the gradient, since the gradient \
+points toward increasing loss. With a learning rate of 2 (a plain, simple \
+number chosen so the effect of one step is easy to see):\n\nW_new = W_old - \
+learningRate \[Times] gradient", "Text"], 
+  Cell[BoxData["learningRate = 2;\nWOutNew = WOut - \
+learningRate*dWOut;\nMatrixForm[N[WOutNew, 4]]"], "Input"], 
+  Cell["Every entry changed, since dWOut had no exact zeros, but the changes \
+are not uniform. Column 4 (\"shoe\") moved the most, and in the direction \
+that increases its logit:", "Text"], 
+  Cell[BoxData["MatrixForm[N[WOutNew - WOut, 4]]"], "Input"], 
+  Cell["Column 4 shows the two largest-magnitude changes in the entire matrix \
+(+2.070 and +0.528 relative to the old weights), both positive \[LongDash] a \
+direct, visible consequence of \"shoe\" being the one column of dLogits that \
+was negative.", "Text"], Cell["14. Run the Model Again", "Section"], 
+  Cell["Q, K, V, and the attention output h did not change (Section 12), so \
+we can reuse h directly and only recompute the last two steps, Logits and \
+Softmax, with the updated WOutNew:", "Text"], 
+  Cell[BoxData["logitsNew = h.WOutNew;\nprobabilitiesNew = \
+Softmax2[logitsNew];\npShoeNew = probabilitiesNew[[targetIndex]];\nlossNew = \
+-Log[pShoeNew];\nGrid[{\n   {\"\", \"Before training\", \"After \
+training\"},\n   {\"P(\\\"shoe\\\")\", N[pShoe, 4], N[pShoeNew, 4]},\n   \
+{\"Loss\", N[loss, 4], N[lossNew, 4]},\n   {\"Predicted token\", \
+Vocabulary[[predictedIndex]],\n     \
+Vocabulary[[First[Ordering[probabilitiesNew, -1]]]]}\n   }, Frame -> All, \
+Background -> {None, {LightGray, None, None}},\n  Dividers -> All]"], 
+   "Input"], Cell[BoxData["{\"P(shoe) increased?\" -> pShoeNew > pShoe, \
+\"Loss decreased?\" -> lossNew < loss}"], "Input"], 
+  Cell["Both checks come back True, computed \[LongDash] not assumed. \
+P(\"shoe\") rose from \[TildeEqual] 0.201 to \[TildeEqual] 0.432, and the \
+loss fell from \[TildeEqual] 1.604 to \[TildeEqual] 0.840. The predicted \
+(highest-probability) token flips from \"run\" before training to \"shoe\" \
+after \[LongDash] one gradient step was enough to change the model's top \
+guess for this single example.", "Text"], 
+  Cell[BoxData["BarChart[probabilitiesNew, ChartLabels -> Vocabulary, \
+ChartStyle -> \"Pastel\",\n  PlotLabel -> \"P(next token | \\\"run \
+casing\\\") \[LongDash] after training\", ImageSize -> 420]"], "Input"], 
+  Cell["15. What Just Happened?", "Section"], Cell["The forward pass turned \
+\"run casing\" into a full probability distribution over the vocabulary \
+(Sections 2-10).", "Item"], Cell["We told the model the correct next token \
+was \"shoe\", and cross-entropy loss measured exactly how wrong its \
+distribution was (Section 11).", "Item"], Cell["The gradient measured how \
+each parameter of WOut would affect that loss if nudged (Section 12), and we \
+checked that gradient numerically rather than taking it on faith.", "Item"], 
+  Cell["Gradient descent moved every weight a small step opposite its \
+gradient (Section 13).", "Item"], Cell["Running the identical input, \"run \
+casing\", through the updated weights produced a different, better \
+distribution: higher P(\"shoe\"), lower loss (Section 14).", "Item"], 
+  Cell["That loop \[LongDash] predict, measure error, compute gradient, \
+update weights, predict again \[LongDash] is the numerical core of how \
+transformer language models learn. Real training repeats it millions or \
+billions of times, over enormous datasets, updating every parameter in the \
+network (not just an output projection), with additional machinery (Section \
+16) layered on top. This notebook does not claim that a single hand-worked \
+update on one example captures everything about training a real model \
+\[LongDash] only that the arithmetic at the heart of it is exactly this.", 
+   "Text"], Cell["16. Scale Comparison", "Section"], 
+  Cell[BoxData["Grid[{\n   {\"\", \"Toy model (this notebook)\", \"A modern \
+pretrained language model\"},\n   {\"Vocabulary size\", \"~6 tokens\", \"tens \
+of thousands to ~1,000,000+ tokens\"},\n   {\"Embedding dimension\", \"2\", \
+\"hundreds to tens of thousands\"},\n   {\"Attention heads\", \"1\", \
+\"dozens, run in parallel per layer\"},\n   {\"Transformer blocks\", \"1\", \
+\"dozens to over 100, stacked\"},\n   {\"Parameters\", \"tens\", \"billions, \
+sometimes hundreds of billions\"},\n   {\"Training examples\", \"1\", \
+\"trillions of tokens\"},\n   {\"Training updates\", \"1 (shown by hand)\", \
+\"millions to billions\"}\n   }, Frame -> All, Background -> {None, \
+{LightGray, None}}, Dividers -> All]"], "Input"], 
+  Cell["The arithmetic did not suddenly become magic. The scale became \
+enormous. Every quantity in the right-hand column is produced by the same \
+handful of operations used above \[LongDash] matrix multiplication, softmax, \
+cross-entropy, gradients, gradient descent \[LongDash] repeated over far more \
+parameters, far more data, and far more training steps, and (per Section 16's \
+introduction and Section \"What we left out\" above) combined with additional \
+architectural components we deliberately omitted here: LayerNorm, residual \
+connections, multi-head attention, larger feed-forward networks, positional \
+encodings, and more. A real system is not simply this exact toy multiplied \
+larger \[LongDash] it is this mechanism plus those additional pieces, at a \
+scale where hand computation is impossible and was never the goal.", "Text"], 
+  Cell["Interactive: What Happens If I Change This Number?", "Section"], 
+  Cell["The three controls below let you perturb the trained model along \
+three different axes: the learning rate used for the update, one specific \
+output weight (WOut[[1,4]], the weight from h's first coordinate into \
+\"shoe\"'s logit, before any training update is applied), and one specific \
+embedding coordinate (the second coordinate of \"casing\"'s embedding, which \
+feeds directly into X, Q, K, V, and everything downstream). Moving any slider \
+recomputes the entire forward pass from scratch and redraws the attention \
+weights, the next-token probability bar chart, P(\"shoe\"), and the loss.", 
+   "Text"], Cell[BoxData["Manipulate[\n  Module[{emb, xLoc, qLoc, kLoc, vLoc, \
+rawLoc, scaledLoc, maskedLoc, attnLoc,\n    attnOutLoc, hLoc, wOutLoc, \
+logitsLoc, probsLoc, pShoeLoc, lossLoc},\n   emb = EmbeddingMatrix;\n   \
+emb[[3, 2]] = casingCoord2;\n   xLoc = emb[[tokenIDs]];\n   qLoc = xLoc.WQ; \
+kLoc = xLoc.WK; vLoc = xLoc.WV;\n   rawLoc = qLoc.Transpose[kLoc];\n   \
+scaledLoc = N[rawLoc/Sqrt[2]];\n   maskedLoc = {{scaledLoc[[1, 1]], \
+-Infinity}, {scaledLoc[[2, 1]], scaledLoc[[2, 2]]}};\n   attnLoc = SoftmaxRow \
+/@ maskedLoc;\n   attnOutLoc = attnLoc.vLoc;\n   hLoc = attnOutLoc[[2]];\n   \
+wOutLoc = WOut;\n   wOutLoc[[1, 4]] = wOut14;\n   logitsLoc = hLoc.wOutLoc;\n \
+  probsLoc = Softmax2[logitsLoc];\n   pShoeLoc = probsLoc[[targetIndex]];\n   \
+lossLoc = -Log[pShoeLoc];\n   Column[{\n     Grid[{{\"attention weights (row \
+2, \\\"casing\\\")\",\n        NumberForm[attnLoc[[2]], {4, 3}]}}],\n     \
+BarChart[probsLoc, ChartLabels -> Vocabulary, ChartStyle -> \"Pastel\",\n     \
+ PlotRange -> {0, 1}, ImageSize -> 380],\n     Grid[{\n       \
+{\"P(\\\"shoe\\\")\", NumberForm[pShoeLoc, {5, 4}]},\n       {\"Loss\", \
+NumberForm[lossLoc, {5, 4}]}\n       }, Frame -> All]\n     }]\n   ],\n  \
+{{learningRateM, 2, \"learning rate (unused above, shown for Section 13 \
+intuition)\"}, 0, 4, 0.1},\n  {{wOut14, 1, \"WOut[[1,4]]  (weight feeding \
+\\\"shoe\\\"'s logit)\"}, -3, 3, 0.1},\n  {{casingCoord2, 1, \"casing \
+embedding, 2nd coordinate\"}, -2, 2, 0.1}\n  ]"], "Input"], 
+  Cell["Try pushing wOut14 higher: P(\"shoe\") should rise, and the loss \
+should fall, mirroring exactly what one gradient step did automatically in \
+Sections 12-14. Try moving the casing embedding coordinate away from its \
+original value of 1: because \"casing\"'s embedding feeds X, Q, K, V, and the \
+attention weights, this single number reaches every stage of the computation, \
+not just the last one.", "Text"], Cell["Try It Without Mathematica", 
+   "Section"], Cell["Everything below can be reproduced with paper, a pencil, \
+and a calculator with e^x and ln buttons. All of the given values below were \
+introduced earlier in this notebook \[LongDash] nothing here is new.", 
+   "Text"], Cell["Given", "Subsection"], Cell["Vocabulary (token : ID)\n  \
+<BOS>:1   run:2   casing:3   shoe:4   cement:5   <EOS>:6\n\nInput tokens: \
+\"run\", \"casing\"  ->  token IDs {2, 3}\nTarget token: \"shoe\"  ->  token \
+ID 4\n\nEmbeddings (token -> vector):\n  run    -> (1, 0)\n  casing -> (0, \
+1)\n\nX = | 1  0 |        WQ = | 1  0 |     WK = | 1  1 |     WV = | 1  0 |\n \
+   | 0  1 |             | 1  1 |          | 0  1 |          | 0  1 |\n\nWOut \
+= |  0   1   0   1  -1   0 |\n       |  0   0   1  -1   0  -1 |\n      \
+(columns, in order: <BOS>, run, casing, shoe, cement, <EOS>)\n\nd (embedding \
+dimension, for scaling) = 2\nLearning rate = 2", "Program"], 
+  Cell["Fill in the blanks", "Subsection"], Cell["Q = ______              K = \
+______              V = ______\n\nQ . Transpose[K] = ______\n\nScaled scores  \
+=  (Q . Transpose[K]) / Sqrt[2]  =  ______\n\nMasked scores (position 1 \
+cannot see position 2; replace that entry with -\[Infinity]) = \
+______\n\nAttention probabilities (softmax each row of the masked scores) = \
+______\n\nAttention output = Attention probabilities . V = ______\n  (take \
+row 2 of this \[LongDash] call it h \[LongDash] this is what predicts the \
+token after \"casing\")\n\nLogits = h . WOut = ______   (6 numbers, one per \
+vocabulary token)\n\nSoftmax the logits  ->  Probabilities = \
+______\n\nP(\"shoe\") = ______   (the probability entry for token 4)\n\nLoss \
+= -Log[ P(\"shoe\") ] = ______", "Program"], Cell["Check your work against \
+Sections 4, 5, 6, 7, 8, 9, 10, and 11 above, which compute exactly these \
+quantities and display every intermediate step. HAND_CALCULATION.md (in this \
+project folder) reproduces this same worksheet as a plain-text file you can \
+print.", "Text"], Cell["Appendix A: Automated Verification", "Section"], 
+  Cell["Before trusting any of the numbers above, we check them \
+programmatically: every matrix has the dimensions it should, every softmax \
+row sums to 1, the causal mask actually zeroes out the disallowed attention \
+weight, the target probability is pulled from the correct index, \
+cross-entropy is computed correctly, the gradient has the right shape and the \
+right sign, the updated weights are actually different from the old ones and \
+are actually used for the second forward pass, and \[LongDash] the two claims \
+this whole notebook depends on \[LongDash] P(\"shoe\") increases and the loss \
+decreases after the one training step. This cell loads \
+TinyTransformerByHand.wl (the standalone reference implementation shipped \
+alongside this notebook) and runs its full check suite.", "Text"], 
+  Cell[BoxData["notebookDir = Quiet[NotebookDirectory[]];\nIf[! \
+StringQ[notebookDir], notebookDir = \
+Directory[]];\nSetDirectory[notebookDir];\nQuiet[Get[\"TinyTransformerByHand.\
+wl\"], {General::shdw}];\nTinyTransformerByHand`RunAllChecks[];"], "Input"], 
+  Cell["Appendix B: Optional Cross-Check With a Built-In Function", 
+   "Section"], Cell["As a final, optional sanity check \[LongDash] and only \
+as a cross-check, never as a replacement for the manual derivation above \
+\[LongDash] we compare our hand-written softmax against Mathematica's \
+built-in Softmax function applied to the same logits. This notebook does not \
+use NetChain, NetGraph, NetTrain, Predict, or Classify anywhere; Softmax here \
+is an ordinary numeric function, not a neural-network abstraction, and we use \
+it only to confirm agreement with Sections 7 and 10, not to compute anything \
+new.", "Text"], Cell[BoxData["builtInProbabilities = Softmax[logits];\n{\"our \
+manual softmax\" -> N[probabilities, 6], \"built-in Softmax[]\" -> \
+N[builtInProbabilities, 6],\n  \"agree?\" -> Max[Abs[probabilities - \
+builtInProbabilities]] < 10^-10}"], "Input"]}, 
+ WindowTitle -> "TinyTransformerByHand", StyleDefinitions -> "Default.nb"]
+
+(* End of Notebook Content *)

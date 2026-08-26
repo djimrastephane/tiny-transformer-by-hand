@@ -1,0 +1,12 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide2.dc.html", "x": 1200, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide3.dc.html", "x": 2400, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide4.dc.html", "x": 3600, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide5.dc.html", "x": 4800, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide6.dc.html", "x": 6000, "y": 0, "w": 1080, "h": 1350, "print": "fixed" },
+    { "file": "Slide7.dc.html", "x": 7200, "y": 0, "w": 1080, "h": 1350, "print": "fixed" }
+  ],
+  "launch": { "view": "canvas" }
+}

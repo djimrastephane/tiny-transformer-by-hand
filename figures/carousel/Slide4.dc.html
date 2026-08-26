@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    .slide{
+      width:1080px; height:1350px; position:relative; overflow:hidden;
+      background:#0B0F1A;
+      background-image:
+        linear-gradient(rgba(70,90,130,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,90,130,0.06) 1px, transparent 1px);
+      background-size:40px 40px;
+      font-family:"IBM Plex Sans", system-ui, sans-serif;
+      color:#E7ECF5;
+      display:flex; flex-direction:column;
+      padding:88px 88px 60px;
+    }
+    .mono{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+    .topbar{ display:flex; justify-content:space-between; align-items:baseline; }
+    .kicker{ font-family:"IBM Plex Mono", monospace; font-size:22px; letter-spacing:0.16em; color:#45C7B8; text-transform:uppercase; }
+    .slidecount{ font-family:"IBM Plex Mono", monospace; font-size:22px; color:#5B6784; }
+    .headline{
+      font-family:"IBM Plex Sans Condensed", sans-serif; font-weight:700;
+      font-size:56px; line-height:1.12; color:#F3F6FC; margin:30px 0 40px; max-width:840px; text-wrap:balance;
+    }
+
+    .section-label{ font-family:"IBM Plex Mono", monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; color:#8592AC; margin-bottom:16px; }
+
+    .attn-bars{ display:flex; flex-direction:column; gap:14px; margin-bottom:44px; }
+    .attn-row{ display:grid; grid-template-columns:190px 1fr 110px; align-items:center; gap:16px; }
+    .attn-row .lab{ font-family:"IBM Plex Mono", monospace; font-size:26px; color:#8592AC; }
+    .attn-track{ height:26px; background:#182238; border-radius:5px; overflow:hidden; }
+    .attn-fill{ height:100%; background:#45C7B8; border-radius:5px 0 0 5px; }
+    .attn-row .pct{ font-family:"IBM Plex Mono", monospace; font-size:26px; text-align:right; color:#E7ECF5; }
+
+    .prob-list{ display:flex; flex-direction:column; gap:16px; }
+    .prob-row{ display:grid; grid-template-columns:220px 1fr 130px; align-items:center; gap:16px; }
+    .prob-row .lab{ font-family:"IBM Plex Mono", monospace; font-size:28px; color:#8592AC; }
+    .prob-row.target .lab{ color:#E8A33D; font-weight:600; }
+    .prob-row.predicted .lab{ color:#E7ECF5; }
+    .prob-track{ height:34px; background:#182238; border-radius:6px; overflow:hidden; position:relative; }
+    .prob-fill{ height:100%; background:#5B6784; border-radius:6px 0 0 6px; }
+    .prob-row.target .prob-fill{ background:#E8A33D; }
+    .prob-row.predicted .prob-track{ box-shadow:inset 0 0 0 3px #45C7B8; }
+    .prob-row .pct{ font-family:"IBM Plex Mono", monospace; font-size:28px; text-align:right; }
+
+    .note{ font-size:26px; color:#8592AC; margin-top:34px; max-width:64ch; line-height:1.5; }
+    .note b{ color:#E8A33D; }
+
+    .pipe{ margin-top:auto; padding-top:26px; border-top:1px solid #263353; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .pipe .stage{ font-family:"IBM Plex Mono", monospace; font-size:17px; letter-spacing:0.07em; text-transform:uppercase; color:#2E374F; }
+    .pipe .stage.done{ color:#2F6E66; }
+    .pipe .stage.current{ color:#E8A33D; font-weight:600; }
+    .pipe .sep{ color:#263353; font-size:16px; }
+  </style>
+</helmet>
+
+<div class="slide">
+  <div class="topbar">
+    <span class="kicker">Attention &rarr; Prediction</span>
+    <span class="slidecount">04 / 07</span>
+  </div>
+
+  <h1 class="headline">Position 2 blends into a guess.</h1>
+
+  <div class="section-label">Attention weights &mdash; how &ldquo;casing&rdquo; looks back</div>
+  <div class="attn-bars">
+    <div class="attn-row"><span class="lab">run</span><span class="attn-track"><span class="attn-fill" style="width:67.0%"></span></span><span class="pct mono">67.0%</span></div>
+    <div class="attn-row"><span class="lab">casing</span><span class="attn-track"><span class="attn-fill" style="width:33.0%"></span></span><span class="pct mono">33.0%</span></div>
+  </div>
+
+  <div class="section-label">P(next token | &ldquo;run casing&rdquo;)</div>
+  <div class="prob-list">
+    <div class="prob-row predicted"><span class="lab">run</span><span class="prob-track"><span class="prob-fill" style="width:28.0%"></span></span><span class="pct mono">28.0%</span></div>
+    <div class="prob-row target"><span class="lab">shoe</span><span class="prob-track"><span class="prob-fill" style="width:20.1%"></span></span><span class="pct mono">20.1%</span></div>
+    <div class="prob-row"><span class="lab">casing</span><span class="prob-track"><span class="prob-fill" style="width:19.9%"></span></span><span class="pct mono">19.9%</span></div>
+    <div class="prob-row"><span class="lab">cement</span><span class="prob-track"><span class="prob-fill" style="width:7.3%"></span></span><span class="pct mono">7.3%</span></div>
+  </div>
+
+  <p class="note">The model&rsquo;s top guess is &ldquo;run&rdquo;, not &ldquo;shoe&rdquo;. That gap is <b>what training is about to close.</b></p>
+
+  <div class="pipe">
+    <span class="stage done">TOKENS</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">EMBED</span><span class="sep">&rsaquo;</span>
+    <span class="stage done">Q &middot; K &middot; V</span><span class="sep">&rsaquo;</span>
+    <span class="stage current">ATTENTION</span><span class="sep">&rsaquo;</span>
+    <span class="stage current">LOGITS</span><span class="sep">&rsaquo;</span>
+    <span class="stage">LOSS</span><span class="sep">&rsaquo;</span>
+    <span class="stage">UPDATE</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
