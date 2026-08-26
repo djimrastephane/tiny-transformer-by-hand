@@ -4,6 +4,7 @@
 [![Live demo](https://img.shields.io/badge/demo-live-45C7B8)](https://djimrastephane.github.io/tiny-transformer-by-hand/)
 [![Mathematica checks](https://img.shields.io/badge/Mathematica_checks-34%2F34_passing-E8A33D)](Mathematica/TinyTransformerByHand.wl)
 [![No LLM required](https://img.shields.io/badge/requires-a_calculator-8592AC)](calculations/HAND_CALCULATION.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Can we build a transformer language model small enough that a human can
 reproduce its important calculations by hand? Yes.** This project is that
@@ -190,3 +191,8 @@ Desktop 13.0 or later**.
   operations shown here, repeated over vastly more parameters and data,
   combined with the additional architectural pieces this project omits —
   not a fundamentally different kind of math.
+
+## License
+
+[MIT](LICENSE) — use, modify, and share freely, including for teaching
+your own version of this example.
