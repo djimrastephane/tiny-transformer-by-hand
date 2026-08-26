@@ -192,3 +192,10 @@ nowhere near close enough for 0.0003 of drift to matter). As with
 `HAND_CALCULATION.md`, this is a completed recomputation, not a
 disclaimer: a reader working through this worksheet with an ordinary
 calculator will land within the same tolerance.
+
+This recomputation is a runnable script, not just prose — see
+[`verify_calculator_precision.py`](verify_calculator_precision.py) in
+this folder (`python3 verify_calculator_precision.py`), which redoes
+both this worksheet and the main one at 4-decimal precision and diffs
+every value against Mathematica's exported ground truth. Currently
+80/80 checks passing, max drift 0.0003.

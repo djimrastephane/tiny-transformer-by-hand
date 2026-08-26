@@ -249,3 +249,10 @@ amounts indistinguishable from the answer key above at 4 significant
 figures. This is not a hope or a disclaimer; it's a completed
 recomputation, and it means the "should match within rounding error"
 line at the top of the answer key is a tested claim, not an assumption.
+
+This recomputation is a runnable script, not just prose — see
+[`verify_calculator_precision.py`](verify_calculator_precision.py) in
+this folder (`python3 verify_calculator_precision.py`), which redoes
+both this worksheet and the LoRA one at 4-decimal precision and diffs
+every value against Mathematica's exported ground truth. Currently
+80/80 checks passing, max drift 0.0003.

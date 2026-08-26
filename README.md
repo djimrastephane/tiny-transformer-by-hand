@@ -4,6 +4,7 @@
 [![Live demo](https://img.shields.io/badge/demo-live-45C7B8)](https://djimrastephane.github.io/tiny-transformer-by-hand/)
 [![Mathematica checks](https://img.shields.io/badge/Mathematica_checks-34%2F34_passing-E8A33D)](Mathematica/TinyTransformerByHand.wl)
 [![LoRA checks](https://img.shields.io/badge/LoRA_checks-21%2F21_passing-E8A33D)](Mathematica/TinyLoRAByHand.wl)
+[![Calculator-precision checks](https://img.shields.io/badge/calculator_precision-80%2F80_passing-8592AC)](calculations/verify_calculator_precision.py)
 [![No LLM required](https://img.shields.io/badge/requires-a_calculator-8592AC)](calculations/HAND_CALCULATION.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -69,7 +70,7 @@ approximate a real model's behavior.
 | **Full notebook, statically rendered** | Every derivation Mathematica computed, laid out as one linear, no-install page — for a reader who wants to see the whole worked argument (not just play with sliders) without needing Mathematica or Wolfram Player installed. Not interactive; the web demo above covers that. | `Web/notebook.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/notebook.html)) |
 | **LoRA companion, statically rendered** | Same treatment as the row above, for the LoRA companion notebook: freeze `W_Out`, train `ΔW = B·A`, and see the full step-by-step comparison against full fine-tuning. | `Web/lora-notebook.html` ([live](https://djimrastephane.github.io/tiny-transformer-by-hand/lora-notebook.html)) |
 | **Mathematica notebook** | The source of mathematical truth, and the only way to actually re-evaluate every cell yourself. Every operation — embedding lookup, Q/K/V, scaled dot-product attention, causal masking, softmax, cross-entropy, the gradient, gradient descent — derived and displayed explicitly, plus an automated 34-check verification suite. Requires Mathematica or (free) Wolfram Player. | `Mathematica/TinyTransformerByHand.nb`, `Mathematica/TinyTransformerByHand.wl` |
-| **Hand-calculation worksheet** | Paper and a calculator. Given values, fill-in-the-blank steps, and an answer key. | `calculations/HAND_CALCULATION.md` |
+| **Hand-calculation worksheet** | Paper and a calculator. Given values, fill-in-the-blank steps, and an answer key — for both the main notebook and the LoRA companion. The claim that a calculator (not just Mathematica) can reproduce these numbers is itself checked by a script, not just asserted. | `calculations/HAND_CALCULATION.md`, `LORA_HAND_CALCULATION.md`, `verify_calculator_precision.py` |
 
 The web demo and the static notebook page are not independent
 reimplementations guessing at the same answer — both are generated
@@ -134,6 +135,7 @@ tiny-transformer-by-hand/
     calculations/
         HAND_CALCULATION.md       - paper-and-calculator worksheet with an answer key
         LORA_HAND_CALCULATION.md  - paper-and-calculator worksheet for the LoRA companion, answer key included
+        verify_calculator_precision.py - redoes both worksheets at 4-decimal precision, diffs against Mathematica's ground truth
     figures/
         README.md                 - the LinkedIn carousels: links, slide-by-slide contents, source files
         carousel/                 - the 8 slide sources (.dc.html), canvas layout, and the seeded canvas
