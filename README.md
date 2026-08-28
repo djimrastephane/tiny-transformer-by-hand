@@ -26,9 +26,12 @@ matrix multiplication at a time, then trained once, live, in front of you.
 GitHub Pages by `.github/workflows/pages.yml` on every push — see
 "Running the web demo" below.)*
 
-**Prefer a 6-slide visual story?**
+**Prefer a visual story?**
 [**View the LinkedIn carousel →**](https://claude.ai/code/artifact/b2a63bf4-2ded-4087-90e1-4b0dbf627c8a)
-*(editable, and exportable to PNG/PDF per slide — source in `figures/carousel/`.)*
+*(8 slides, editable, and exportable to PNG/PDF per slide — source in
+`figures/carousel/`.)* Plus its own companion:
+[**the Tiny LoRA carousel →**](https://claude.ai/code/artifact/56763acd-6fc9-4939-ad5c-66d57657d7b2)
+*(6 slides — source in `figures/lora-carousel/`.)*
 
 ---
 
