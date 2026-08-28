@@ -1,6 +1,7 @@
 # Tiny Transformer, By Hand
 
 [![Pages deploy status](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/pages.yml/badge.svg)](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/pages.yml)
+[![Calculator-precision CI](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/checks.yml/badge.svg)](https://github.com/djimrastephane/tiny-transformer-by-hand/actions/workflows/checks.yml)
 [![Live demo](https://img.shields.io/badge/demo-live-45C7B8)](https://djimrastephane.github.io/tiny-transformer-by-hand/)
 [![Mathematica checks](https://img.shields.io/badge/Mathematica_checks-34%2F34_passing-E8A33D)](Mathematica/TinyTransformerByHand.wl)
 [![LoRA checks](https://img.shields.io/badge/LoRA_checks-21%2F21_passing-E8A33D)](Mathematica/TinyLoRAByHand.wl)
@@ -233,6 +234,16 @@ same way: open it from the `Mathematica/` folder, evaluate top to bottom,
 and its own Appendix runs
 `wolframscript -code 'Get["TinyTransformerByHand.wl"]; Get["TinyLoRAByHand.wl"]; TinyLoRAByHand`RunLoRAChecks[]'`
 for the same kind of independent check (currently 21/21 passing).
+
+**A note on what's checked where:** `RunAllChecks[]`, `RunAlternateTargetChecks["cement"]`,
+and `RunLoRAChecks[]` need a licensed Wolfram Engine, so they're run
+manually/locally, not in CI — GitHub-hosted runners don't have one, and
+setting it up would need a Wolfram Engine for Developers account and an
+entitlement stored as a repo secret. `calculations/verify_calculator_precision.py`
+needs nothing but Python, so it *does* run in CI on every push and pull
+request that touches `calculations/**` — see
+[`.github/workflows/checks.yml`](.github/workflows/checks.yml) and the
+"Calculator-precision CI" badge at the top of this README.
 
 ## What you should understand after going through this
 

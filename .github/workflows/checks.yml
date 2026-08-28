@@ -1,0 +1,30 @@
+name: Calculator-precision checks
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "calculations/**"
+      - "Web/notebook_values.json"
+      - "Web/lora_values.json"
+      - ".github/workflows/checks.yml"
+  pull_request:
+    paths:
+      - "calculations/**"
+      - "Web/notebook_values.json"
+      - "Web/lora_values.json"
+      - ".github/workflows/checks.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Run calculator-precision verification
+        run: python3 calculations/verify_calculator_precision.py
